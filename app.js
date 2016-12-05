@@ -71,7 +71,7 @@ function initDBConnection() {
                                     "map": "function (doc) {\n  if (doc.type == 'room') {\n    emit(doc.name, {\n      \"name\": doc.name,\n      \"capacity\": doc.capacity,\n      \"phone\": doc.phone,\n      \"location\": doc.location,\n      \"facilities\": doc.facilities,\n      \"timezone\": doc.timezone,\n    });\n  }\n}"
                                 },
                                 "site": {
-                                    "map": "function (doc) {\n  if (doc.type == 'site') {\n    emit(doc._id, doc.site.location);\n  }\n}"
+                                    "map": "function (doc) {\n  if (doc.type == 'site') {\n    emit(doc._id, doc.location);\n  }\n}"
                                 },
                                 "freebusy": {
                                     "map": "function (doc) {\n  if (doc.type == 'room') {\n    emit(doc._id, {\n      'room': doc.name,\n      'freebusy':doc.freebusy\n    });\n  }\n}"
@@ -318,7 +318,7 @@ app.post('/api/smr/v1/book', function(request, response) {
             // step5. add the new event
             mydb.insert(event).then(function(doc) {
                 console.log('event inserted');
-                response.status(200).send(event);
+                response.sendStatus(200);
             }).catch(function(err) {
                 console.log('failed to insert the event:' + event);
                 response.status(err.statusCode).send(err);
@@ -458,10 +458,17 @@ app.post('/api/smr/v1/site', function(request, response) {
     var name = body.name;
     var location = body.location;
 
+    if (!name) {
+        var err = errObject('failed to create a site', 'name is invalid', 500);
+        console.log(err.error);
+        response.status(err.statusCode).send(err);
+        return;
+    }
+
     var mydb = cloudant.db.use(dbCredentials.dbName);
 
     var site = {
-        'id': name,
+        '_id': name,
         'type': 'site',
         'name': name,
         'location': location
@@ -469,7 +476,7 @@ app.post('/api/smr/v1/site', function(request, response) {
 
     mydb.insert(site).then(function(newdoc) {
         console.log('site created: '+JSON.stringify(newdoc));
-        response.status(200).send(site);
+        response.sendStatus(200);
     }).catch(function(err) {
         console.log('failed to create site: ');
         response.status(err.statusCode).send(err);
@@ -502,10 +509,25 @@ app.post('/api/smr/v1/room', function(request, response) {
     var facilities = body.facilities;
     var timezone = body.timezone;
 
+    if (!name) {
+        var err = errObject('failed to create a room', 'name is invalid', 500);
+        console.log(err.error);
+        response.status(err.statusCode).send(err);
+        return;
+    }
+
+    if (!capacity) {
+        var err = errObject('failed to create a room', 'capacity is invalid', 500);
+        console.log(err.error);
+        response.status(err.statusCode).send(err);
+        return;
+    }
+
+
     var mydb = cloudant.db.use(dbCredentials.dbName);
 
     var room = {
-        'id': name,
+        '_id': name,
         'type': 'room',
         'name': name,
         'capacity': capacity,
@@ -518,7 +540,7 @@ app.post('/api/smr/v1/room', function(request, response) {
 
     mydb.insert(room).then(function(newdoc) {
         console.log('room created: ' + JSON.stringify(newdoc));
-        response.status(200).send(room);
+        response.sendStatus(200);
     }).catch(function(err) {
         console.log('failed to create room: ');
         response.status(err.statusCode).send(err);
