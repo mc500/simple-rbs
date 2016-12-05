@@ -1,0 +1,219 @@
+# Simple Meeting Room Managment API
+swagger: '2.0'
+info:
+  title: SMR API
+  description: Simple Meeting Room Booking System API
+  version: "0.0.1"
+# the domain of the service
+host: simple-rbs.mybluemix.net
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /api/smr/v1
+produces:
+  - application/json
+paths:
+  /rooms:
+    get:
+      summary: Get all meeting rooms
+      responses:
+        200:
+          description: An array of meeting room
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/RoomObject'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /freebusy:
+    get:
+      summary: Get free-busy data for rooms or selected single room
+      parameters:
+      - name : room
+        in: query
+        type: string
+      - name : begin
+        in: query
+        type: integer
+        format: int64
+      - name : end
+        in: query
+        type: integer
+        format: int64
+        
+      responses:
+        200:
+          description: An freebusy array of the meeting rooms
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/FreeBusyStatus'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /book:
+    post:
+      summary: Book on the room
+      parameters:
+      - name: body
+        in: body
+        schema:
+          $ref: '#/definitions/BookingObject'
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      summary: Delete the booked event on the room
+      parameters:
+      - name: room
+        in: query
+        type: string
+      - name: start
+        in: query
+        type: integer
+        format: int64
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /site:
+    post:
+      summary: Create a site
+      parameters:
+      - name: body
+        in: body
+        schema:
+          $ref: '#/definitions/SiteObject'
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /room:
+    post:
+      summary: Book on the room
+      parameters:
+      - name: body
+        in: body
+        schema:
+          $ref: '#/definitions/RoomObject'
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+definitions:
+  SiteObject:
+    type: object
+    required: ['name']
+    properties:
+      name:
+        type: string
+        example: 3IFC
+      location:
+        type: string
+        example: Seoul/Korea
+  RoomObject:
+    type: object
+    required: ['name', 'capacity']
+    properties:
+      name:
+        type: string
+        example: 12M12/Monitor/10/3IFC
+      capacity:
+        type: integer
+        format: int32
+        example: 10
+      phone:
+        type: string
+        example: '+82-02-1234-0000'
+      location:
+        type: string
+        example: 12F
+      facilities:
+        type: string
+        example: Monitor
+      timezone:
+        type: string
+        example: Asia/Seoul
+  BookingObject:
+    type: object
+    required: ['room', 'start', 'end', 'subscriber']
+    properties:
+      room:
+        type: string
+        example: 12M12/Monitor/10/3IFC
+      start:
+        type: integer
+        format: int64
+        example: 1480518000000
+      end:
+        type: integer
+        format: int64
+        example: 1480521600000
+      subscriber:
+        $ref: '#/definitions/Subscriber'
+  Subscriber:
+    type: object
+    required: ['name']
+    properties:
+      name:
+        type: string
+        example: John Doe/ACME
+      email:
+        type: string
+        example: johne.doe@ACME
+      phone:
+        type: string
+        example: +82-01-1234-0000
+  FreeBusyStatus:
+    type: object
+    required: ['room', 'freebusy']
+    properties:
+      room:
+        type: string
+        example: 12M12/Monitor/10/3IFC
+      freebusy:
+        type: array
+        items:
+          $ref: '#/definitions/FreeBusy'
+  FreeBusy:
+    type: object
+    required: ['start', 'duration']
+    properties:
+      start:
+        type: integer
+        format: int64
+        example: 1480518000000
+      duration:
+        type: integer
+        format: int64
+        example: 1480521600000
+  Error:
+    type: object
+    properties:
+      error:
+        type: string
+        example: failed to get document
+      reason:
+        type: string
+        example: insufficient parameter
+      statusCode:
+        type: integer
+        format: int32
+        example: 500
