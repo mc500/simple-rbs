@@ -2,23 +2,14 @@
  * Module dependencies.
  */
 
-var express = require('express'),
-    routes = require('./routes'),
-    user = require('./routes/user'),
-    http = require('http'),
-    path = require('path'),
-    fs = require('fs');
+var express = require('express'), routes = require('./routes'), user = require('./routes/user'), http = require('http'), path = require('path'), fs = require('fs');
 
 var app = express();
 
-var db;
-
 var cloudant;
 
-var fileToUpload;
-
 var dbCredentials = {
-    dbName: 'my_sample_db'
+    dbName : 'smr'
 };
 
 var bodyParser = require('body-parser');
@@ -34,9 +25,7 @@ app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.engine('html', require('ejs').renderFile);
 app.use(logger('dev'));
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(methodOverride());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -48,379 +37,501 @@ if ('development' == app.get('env')) {
 }
 
 function initDBConnection() {
-    //When running on Bluemix, this variable will be set to a json object
-    //containing all the service credentials of all the bound services
-    if (process.env.VCAP_SERVICES) {
+
+    var db;
+
+    if(process.env.VCAP_SERVICES) {
         var vcapServices = JSON.parse(process.env.VCAP_SERVICES);
         // Pattern match to find the first instance of a Cloudant service in
         // VCAP_SERVICES. If you know your service key, you can access the
         // service credentials directly by using the vcapServices object.
-        for (var vcapService in vcapServices) {
-            if (vcapService.match(/cloudant/i)) {
+        for(var vcapService in vcapServices){
+            if(vcapService.match(/cloudant/i)){
+                dbCredentials.host = vcapServices[vcapService][0].credentials.host;
+                dbCredentials.port = vcapServices[vcapService][0].credentials.port;
+                dbCredentials.user = vcapServices[vcapService][0].credentials.username;
+                dbCredentials.password = vcapServices[vcapService][0].credentials.password;
                 dbCredentials.url = vcapServices[vcapService][0].credentials.url;
+
+                cloudant = require('cloudant')({
+                    'url': dbCredentials.url,
+                    'plugin': 'promises'
+                });
+
+                // check if DB exists if not create
+                cloudant.db.create(dbCredentials.dbName, function (err, res) {
+                    if (err) { console.log('could not create db ', err); }
+                    else {
+                        // Create Design
+
+                        var design = [{
+                            "_id": "_design/resouces",
+                            "views": {
+                                "rooms": {
+                                    "map": "function (doc) {\n  if (doc.type == 'room') {\n    emit(doc.name, {\n      \"name\": doc.name,\n      \"capacity\": doc.capacity,\n      \"phone\": doc.phone,\n      \"location\": doc.location,\n      \"facilities\": doc.facilities,\n      \"timezone\": doc.timezone,\n    });\n  }\n}"
+                                },
+                                "site": {
+                                    "map": "function (doc) {\n  if (doc.type == 'site') {\n    emit(doc._id, doc.site.location);\n  }\n}"
+                                },
+                                "freebusy": {
+                                    "map": "function (doc) {\n  if (doc.type == 'room') {\n    emit(doc._id, {\n      'room': doc.name,\n      'freebusy':doc.freebusy\n    });\n  }\n}"
+                                },
+                                "events": {
+                                    "map": "function (doc) {\n  if (doc.type == 'event') {\n    emit([(new Date(doc.start)).getTime(), doc.room], doc.subscriber.name);\n  }\n}"
+                                },
+                                "freebusy-validator": {
+                                    "map": "function(newDoc, oldDoc, userCtx, secObj) {\n  if (newDoc.type === 'room') {\n    var freebusy = newDoc.freebusy;\n\n    if (freebusy === undefined) {\n      throw({forbidden: 'Document must have an freebusy.'});\n    }\n\n    if (!Array.isArray(freebusy)) {\n      throw({forbidden: 'freebusy must be instance of Array.'});\n    }\n\n    // sort\n    var sorted = freebusy.sort(function(a,b) { return a.start-b.start;});\n\n    // check conflition\n    var prev;\n    var conflicted = sorted.some(function(obj, idx, arr) {\n        if (prev !== undefined && obj.start < (prev.start + prev.duration)) {\n          conflictedIdx = idx;\n          return true;\n        }\n        prev = obj;\n        return false;\n    });\n\n    if (conflicted) {\n      throw({forbidden: 'freebusy should not be conflicted.'});\n    }\n  }\n}"
+                                },
+                                "events_by_room": {
+                                    "map": "function (doc) {\n  if (doc.type == 'event') {\n    emit([doc.room, (new Date(doc.start)).getTime()], {\n      \"start\": doc.start,\n      \"end\": doc.end,\n      \"startText\": doc.startText,\n      \"endText\": doc.endText,\n      \"room\": doc.room,\n      \"subscriber\": doc.subscriber\n    });\n  }\n}"
+                                },
+                                "events_by_email": {
+                                    "map": "function (doc) {\n  if (doc.type == 'event') {\n    emit(doc.subscriber.email, {\n      \"start\": doc.start,\n      \"end\": doc.end,\n      \"startText\": doc.startText,\n      \"endText\": doc.endText,\n      \"room\": doc.room,\n      \"subscriber\": doc.subscriber\n    });\n  }\n}"
+                                }
+                            },
+                            "language": "javascript"
+                        }, {
+                            "_id": "_design/validator_freebusy",
+                            "validate_doc_update": "function(newDoc, oldDoc, userCtx, secObj) {\n  if (newDoc.type === 'room') {\n    var freebusy = newDoc.freebusy;\n\n    if (freebusy === undefined) {\n      throw({forbidden: 'Document must have an freebusy.'});\n    }\n\n    if (!Array.isArray(freebusy)) {\n      throw({forbidden: 'freebusy must be instance of Array.'});\n    }\n\n    // sort\n    var sorted = freebusy.sort(function(a,b) { return a.start-b.start;});\n\n    // check conflition\n    var prev;\n    var conflicted = sorted.some(function(obj, idx, arr) {\n        if (prev !== undefined && obj.start < (prev.start + prev.duration)) {\n          conflictedIdx = idx;\n          return true;\n        }\n        prev = obj;\n        return false;\n    });\n\n    if (conflicted) {\n      throw({forbidden: 'freebusy should not be conflicted.'});\n    }\n  }\n}"
+                        }];
+
+                        //
+
+                        var mydb = cloudant.db.use(dbCredentials.dbName);
+
+                        design.forEach(function(view){
+                            mydb.insert(view).then(function(newdoc) {
+                                console.log('view created: '+view);
+                            }).catch(function(err) {
+                                console.log('failed to create view: ');
+                            });
+                        });
+
+                    }
+                });
+
+                db = cloudant.use(dbCredentials.dbName);
+                break;
             }
         }
-    } else { //When running locally, the VCAP_SERVICES will not be set
-
-        // When running this app locally you can get your Cloudant credentials
+        if(db==null){
+            console.warn('Could not find Cloudant credentials in VCAP_SERVICES environment variable - data will be unavailable to the UI');
+        }
+    } else{
+        console.warn('VCAP_SERVICES environment variable not set - data will be unavailable to the UI');
+        // For running this app locally you can get your Cloudant credentials
         // from Bluemix (VCAP_SERVICES in "cf env" output or the Environment
         // Variables section for an app in the Bluemix console dashboard).
         // Alternately you could point to a local database here instead of a
         // Bluemix service.
-        // url will be in this format: https://username:password@xxxxxxxxx-bluemix.cloudant.com
-        dbCredentials.url = "REPLACE ME";
+        //dbCredentials.host = "REPLACE ME";
+        //dbCredentials.port = REPLACE ME;
+        //dbCredentials.user = "REPLACE ME";
+        //dbCredentials.password = "REPLACE ME";
+        //dbCredentials.url = "REPLACE ME";
+
+        //cloudant = require('cloudant')(dbCredentials.url);
+
+        // check if DB exists if not create
+        //cloudant.db.create(dbCredentials.dbName, function (err, res) {
+        //    if (err) { console.log('could not create db ', err); }
+        //});
+
+        //db = cloudant.use(dbCredentials.dbName);
     }
-
-    cloudant = require('cloudant')(dbCredentials.url);
-
-    // check if DB exists if not create
-    cloudant.db.create(dbCredentials.dbName, function(err, res) {
-        if (err) {
-            console.log('Could not create new db: ' + dbCredentials.dbName + ', it might already exist.');
-        }
-    });
-
-    db = cloudant.use(dbCredentials.dbName);
 }
 
 initDBConnection();
 
 app.get('/', routes.index);
 
-function createResponseData(id, name, value, attachments) {
+/**
+ * Get all meeting rooms
+ */
+app.get('/api/smr/rooms', function(request, response) {
+    var mydb = cloudant.db.use(dbCredentials.dbName);
+    mydb.view('resouces', 'rooms', function(err, body) {
+        if (!err) {
+            response.setHeader('Content-Type', 'application/json');
+            var len = body.rows.length;
+            console.log('total # of docs -> '+len);
+            if(len == 0) {
+                response.write('[]'); // empty array
+                response.end();
+                return;
+            }
 
-    var responseData = {
-        id: id,
-        name: name,
-        value: value,
-        attachements: []
-    };
-
-
-    attachments.forEach(function(item, index) {
-        var attachmentData = {
-            content_type: item.type,
-            key: item.key,
-            url: '/api/favorites/attach?id=' + id + '&key=' + item.key
-        };
-        responseData.attachements.push(attachmentData);
-
+            var docList = [];
+            body.rows.forEach(function(doc) {
+                console.log(doc.value);
+                docList.push(doc.value);
+            });
+            response.write(JSON.stringify(docList));
+            response.end();
+        } else {
+            console.log(err);
+            response.status(500).send({ error: err })
+        }
     });
-    return responseData;
-}
+});
 
+/**
+ * Get free-busy data for rooms
+ */
+app.get('/api/smr/freebusy', function(request, response) {
 
-var saveDocument = function(id, name, value, response) {
+    // Test room : 12M01/Monitor/6/3IFC
+    //console.log('room: '+request.query.room);
 
-    if (id === undefined) {
-        // Generated random id
-        id = '';
+    response.setHeader('Content-Type', 'application/json');
+
+    var mydb = cloudant.use(dbCredentials.dbName);
+
+    var params = {};
+
+    if (request.query.room) {
+        params['key'] = request.query.room;
     }
 
-    db.insert({
-        name: name,
-        value: value
-    }, id, function(err, doc) {
-        if (err) {
-            console.log(err);
-            response.sendStatus(500);
-        } else
-            response.sendStatus(200);
-        response.end();
-    });
+    // filter
+    var filter = {};
+    if (request.query.begin) {
+        filter['begin'] = Number(request.query.begin);
+        if (filter.begin === NaN) {
+            filter['begin'] = new Date(request.query.begin).getTime();
+        }
+    }
+    if (request.query.end) {
+        filter['end'] = Number(request.query.end);
+        if (filter.end === NaN) {
+            filter['end'] = new Date(request.query.end).getTime();
+        }
+    }
 
-}
+    mydb.view('resouces', 'freebusy', params, function(err, body) {
+        if (!err) {
+            var len = body.rows.length;
+            console.log('total # of docs -> '+len);
+            if(len == 0) {
+                response.write('[]'); // empty array
+                response.end();
+                return;
+            }
 
-app.get('/api/favorites/attach', function(request, response) {
-    var doc = request.query.id;
-    var key = request.query.key;
+            var docList = [];
+            body.rows.forEach(function(doc) {
+                //console.log(doc.value);
 
-    db.attachment.get(doc, key, function(err, body) {
-        if (err) {
-            response.status(500);
-            response.setHeader('Content-Type', 'text/plain');
-            response.write('Error: ' + err);
+                // Array
+                var filtered = doc.value.freebusy.filter(function(slot) {
+                    if (filter.begin && (slot.start < filter.begin)) {
+                        //console.log('begin filter');
+                        return false;
+                    }
+
+                    if (filter.end && (slot.start > filter.end)) {
+                        //console.log('end filter');
+                        return false;
+                    }
+                    //console.log('show: '+filter.begin+', '+slot.start);
+                    return true;
+                });
+
+                console.log('# of '+doc.value.room+' freebusy: '+filtered.length);
+
+                docList.push({
+                    'room': doc.value.room,
+                    'freebusy': filtered
+                });
+            });
+            response.write(JSON.stringify(docList));
             response.end();
+        } else {
+            console.log('failed to get view');
+            response.status(err.statusCode).send(err);
+        }
+    });
+});
+
+/**
+ * Book on the room
+ * Content-Type should be 'application/json'
+ {
+    'start': 'start date time in milliseconds',
+    'end': 'end date time in milliseconds',
+    'room': 'room name',
+    'subscriber': {
+        '':
+        'name': 'user name',
+        'email': 'user email',
+        'phone': 'user phone number'
+    }
+ }
+ */
+app.post('/api/smr/book', function(request, response) {
+    var slotsize = 10; // in minutes
+    var minslot = slotsize*10000; // in millsec
+
+    response.setHeader('Content-Type', 'application/json');
+
+    var body = request.body;
+
+    var room = body.room;
+    var start = body.start;
+    var end = body.end;
+    var subscriber = body.subscriber || {'name': 'In USE'};
+
+    var duration = end - start;
+
+    //
+    if (duration <  minslot ) {
+        //
+        response.status(500).send({ error: 'invalid date time!!!' });
+        return;
+    }
+
+    var event = {
+        'type': 'event',
+        'startText': new Date(start).toISOString(), // "2016-12-01T00:00:00+09:00"
+        'endText': new Date(end).toISOString(), // "2016-12-01T01:00:00+09:00"
+        'start': start,
+        'end': end,
+        'room': room,
+        'subscriber': subscriber
+    };
+
+    // step1. get data for the room
+    var mydb = cloudant.db.use(dbCredentials.dbName);
+
+    mydb.get(room).then(function(doc) {
+
+        // step2. freebusy array
+        doc.freebusy.push({
+            "start": start,
+            "duration": duration
+        });
+
+        // step3. update freebusy to server
+        mydb.insert(doc).then(function(newdoc) {
+            console.log('freebusy updated');
+
+            // step5. add the new event
+            mydb.insert(event).then(function(doc) {
+                console.log('event inserted');
+                response.status(200).send(event);
+            }).catch(function(err) {
+                console.log('failed to insert the event:' + event);
+                response.status(err.statusCode).send(err);
+            });
+        }).catch(function(err) {
+            console.log('failed to update freebusy:' + {'start': start, 'duration': duration});
+            response.status(err.statusCode).send(err);
+        });
+
+
+    }).catch(function(err){
+        console.log('failed to get document');
+        response.status(err.statusCode).send(err);
+    });
+});
+
+
+
+/**
+ * Delete the booked event on the room
+ * Content-Type should be 'application/json'
+ */
+app.delete('/api/smr/book', function(request, response) {
+
+    response.setHeader('Content-Type', 'application/json');
+
+    if (!request.query.room && request.query.start) {
+        var err = errObject('failed to get document', 'insufficient parameter', 500);
+        console.log(err.error);
+        response.status(err.statusCode).send(err);
+        return;
+    }
+
+    var start = Number(request.query.start);
+    if (start == NaN) {
+        var err = errObject('failed to get document', 'start key is not a number', 500);
+        console.log(err.error);
+        response.status(err.statusCode).send(err);
+        return;
+    }
+
+    var room = request.query.room;
+
+    var mydb = cloudant.db.use(dbCredentials.dbName);
+
+    // step1. get data for the room
+    mydb.get(room).then(function(doc) {
+
+        // step2. freebusy array
+        var idx = -1;
+        if (!doc.freebusy.some(function(obj, i, arr){
+            if (obj.start == start) {
+                idx = i;
+                return true;
+            }
+        })) {
+            var err = errObject('failed to get freebusy', 'start key is not in freebusy', 500);
+            console.log(err.error);
+            response.status(err.statusCode).send(err);
             return;
         }
 
-        response.status(200);
-        response.setHeader("Content-Disposition", 'inline; filename="' + key + '"');
-        response.write(body);
-        response.end();
-        return;
-    });
-});
+        doc.freebusy.splice(idx, 1);
 
-app.post('/api/favorites/attach', multipartMiddleware, function(request, response) {
+        // step3. update freebusy to server
+        mydb.insert(doc).then(function(newdoc) {
+            console.log('freebusy deleted');
 
-    console.log("Upload File Invoked..");
-    console.log('Request: ' + JSON.stringify(request.headers));
+            // step4. find the event
 
-    var id;
+            mydb.view('resouces', 'events_by_room', {
+                'key': [room, start],
+                'include_docs': true
+            }).then(function(body){
 
-    db.get(request.query.id, function(err, existingdoc) {
-
-        var isExistingDoc = false;
-        if (!existingdoc) {
-            id = '-1';
-        } else {
-            id = existingdoc.id;
-            isExistingDoc = true;
-        }
-
-        var name = request.query.name;
-        var value = request.query.value;
-
-        var file = request.files.file;
-        var newPath = './public/uploads/' + file.name;
-
-        var insertAttachment = function(file, id, rev, name, value, response) {
-
-            fs.readFile(file.path, function(err, data) {
-                if (!err) {
-
-                    if (file) {
-
-                        db.attachment.insert(id, file.name, data, file.type, {
-                            rev: rev
-                        }, function(err, document) {
-                            if (!err) {
-                                console.log('Attachment saved successfully.. ');
-
-                                db.get(document.id, function(err, doc) {
-                                    console.log('Attachements from server --> ' + JSON.stringify(doc._attachments));
-
-                                    var attachements = [];
-                                    var attachData;
-                                    for (var attachment in doc._attachments) {
-                                        if (attachment == value) {
-                                            attachData = {
-                                                "key": attachment,
-                                                "type": file.type
-                                            };
-                                        } else {
-                                            attachData = {
-                                                "key": attachment,
-                                                "type": doc._attachments[attachment]['content_type']
-                                            };
-                                        }
-                                        attachements.push(attachData);
-                                    }
-                                    var responseData = createResponseData(
-                                        id,
-                                        name,
-                                        value,
-                                        attachements);
-                                    console.log('Response after attachment: \n' + JSON.stringify(responseData));
-                                    response.write(JSON.stringify(responseData));
-                                    response.end();
-                                    return;
-                                });
-                            } else {
-                                console.log(err);
-                            }
-                        });
-                    }
+                var len = body.rows.length;
+                console.log('total # of docs -> '+len);
+                if(len == 0) {
+                    // Document not found
+                    var err = errObject('failed to get document', 'Unknown key', 404);
+                    console.log(err.error);
+                    response.status(err.statusCode).send(err);
+                    return;
                 }
-            });
-        }
 
-        if (!isExistingDoc) {
-            existingdoc = {
-                name: name,
-                value: value,
-                create_date: new Date()
-            };
-
-            // save doc
-            db.insert({
-                name: name,
-                value: value
-            }, '', function(err, doc) {
-                if (err) {
-                    console.log(err);
-                } else {
-
-                    existingdoc = doc;
-                    console.log("New doc created ..");
-                    console.log(existingdoc);
-                    insertAttachment(file, existingdoc.id, existingdoc.rev, name, value, response);
-
+                if (len != 1) {
+                    console.error('there are ' + len +' event documents!!! please check it later.');
                 }
-            });
 
-        } else {
-            console.log('Adding attachment to existing doc.');
-            console.log(existingdoc);
-            insertAttachment(file, existingdoc._id, existingdoc._rev, name, value, response);
-        }
+                console.log(body.rows[0].doc);
 
-    });
+                var doc = body.rows[0].doc;
 
-});
-
-app.post('/api/favorites', function(request, response) {
-
-    console.log("Create Invoked..");
-    console.log("Name: " + request.body.name);
-    console.log("Value: " + request.body.value);
-
-    // var id = request.body.id;
-    var name = request.body.name;
-    var value = request.body.value;
-
-    saveDocument(null, name, value, response);
-
-});
-
-app.delete('/api/favorites', function(request, response) {
-
-    console.log("Delete Invoked..");
-    var id = request.query.id;
-    // var rev = request.query.rev; // Rev can be fetched from request. if
-    // needed, send the rev from client
-    console.log("Removing document of ID: " + id);
-    console.log('Request Query: ' + JSON.stringify(request.query));
-
-    db.get(id, {
-        revs_info: true
-    }, function(err, doc) {
-        if (!err) {
-            db.destroy(doc._id, doc._rev, function(err, res) {
-                // Handle response
-                if (err) {
-                    console.log(err);
-                    response.sendStatus(500);
-                } else {
+                // step5. destroy the event
+                mydb.destroy(
+                    doc._id, doc._rev
+                ).then(function(body){
+                    console.log('event destoryed');
                     response.sendStatus(200);
-                }
-            });
-        }
-    });
-
-});
-
-app.put('/api/favorites', function(request, response) {
-
-    console.log("Update Invoked..");
-
-    var id = request.body.id;
-    var name = request.body.name;
-    var value = request.body.value;
-
-    console.log("ID: " + id);
-
-    db.get(id, {
-        revs_info: true
-    }, function(err, doc) {
-        if (!err) {
-            console.log(doc);
-            doc.name = name;
-            doc.value = value;
-            db.insert(doc, doc.id, function(err, doc) {
-                if (err) {
-                    console.log('Error inserting data\n' + err);
-                    return 500;
-                }
-                return 200;
-            });
-        }
-    });
-});
-
-app.get('/api/favorites', function(request, response) {
-
-    console.log("Get method invoked.. ")
-
-    db = cloudant.use(dbCredentials.dbName);
-    var docList = [];
-    var i = 0;
-    db.list(function(err, body) {
-        if (!err) {
-            var len = body.rows.length;
-            console.log('total # of docs -> ' + len);
-            if (len == 0) {
-                // push sample data
-                // save doc
-                var docName = 'sample_doc';
-                var docDesc = 'A sample Document';
-                db.insert({
-                    name: docName,
-                    value: 'A sample Document'
-                }, '', function(err, doc) {
-                    if (err) {
-                        console.log(err);
-                    } else {
-
-                        console.log('Document : ' + JSON.stringify(doc));
-                        var responseData = createResponseData(
-                            doc.id,
-                            docName,
-                            docDesc, []);
-                        docList.push(responseData);
-                        response.write(JSON.stringify(docList));
-                        console.log(JSON.stringify(docList));
-                        console.log('ending response...');
-                        response.end();
-                    }
+                }).catch(function(err) {
+                    console.log('failed to destroy the event:' + event);
+                    response.status(err.statusCode).send(err);
                 });
-            } else {
+            }).catch(function(err) {
+                console.log('failed to search the event:' + event);
+                response.status(err.statusCode).send(err);
+            });
+        }).catch(function(err) {
+            console.log('failed to update freebusy with start:' + start);
+            response.status(err.statusCode).send(err);
+        });
 
-                body.rows.forEach(function(document) {
 
-                    db.get(document.id, {
-                        revs_info: true
-                    }, function(err, doc) {
-                        if (!err) {
-                            if (doc['_attachments']) {
-
-                                var attachments = [];
-                                for (var attribute in doc['_attachments']) {
-
-                                    if (doc['_attachments'][attribute] && doc['_attachments'][attribute]['content_type']) {
-                                        attachments.push({
-                                            "key": attribute,
-                                            "type": doc['_attachments'][attribute]['content_type']
-                                        });
-                                    }
-                                    console.log(attribute + ": " + JSON.stringify(doc['_attachments'][attribute]));
-                                }
-                                var responseData = createResponseData(
-                                    doc._id,
-                                    doc.name,
-                                    doc.value,
-                                    attachments);
-
-                            } else {
-                                var responseData = createResponseData(
-                                    doc._id,
-                                    doc.name,
-                                    doc.value, []);
-                            }
-
-                            docList.push(responseData);
-                            i++;
-                            if (i >= len) {
-                                response.write(JSON.stringify(docList));
-                                console.log('ending response...');
-                                response.end();
-                            }
-                        } else {
-                            console.log(err);
-                        }
-                    });
-
-                });
-            }
-
-        } else {
-            console.log(err);
-        }
+    }).catch(function(err){
+        console.log('failed to get document');
+        response.status(err.statusCode).send(err);
     });
-
 });
 
+
+
+
+/**
+ * Create Site
+ * Content-Type should be 'application/json'
+ {
+    'name': name,
+    'location': location
+ }
+ */
+app.post('/api/smr/site', function(request, response) {
+
+    response.setHeader('Content-Type', 'application/json');
+
+    var body = request.body;
+
+    var name = body.name;
+    var location = body.location;
+
+    var mydb = cloudant.db.use(dbCredentials.dbName);
+
+    var site = {
+        'id': name,
+        'type': 'site',
+        'name': name,
+        'location': location
+    };
+
+    mydb.insert(site).then(function(newdoc) {
+        console.log('site created: '+JSON.stringify(newdoc));
+        response.status(200).send(site);
+    }).catch(function(err) {
+        console.log('failed to create site: ');
+        response.status(err.statusCode).send(err);
+    });
+});
+
+
+/**
+ * Create Room
+ * Content-Type should be 'application/json'
+ {
+    'name': name,
+    'capacity': capacity,
+    'phone': phone,
+    'location': location,
+    'facilities': facilities,
+    'timezone': timezone,
+ }
+ */
+app.post('/api/smr/room', function(request, response) {
+
+    response.setHeader('Content-Type', 'application/json');
+
+    var body = request.body;
+
+    var name = body.name;
+    var capacity = body.capacity;
+    var phone = body.phone;
+    var location = body.location;
+    var facilities = body.facilities;
+    var timezone = body.timezone;
+
+    var mydb = cloudant.db.use(dbCredentials.dbName);
+
+    var room = {
+        'id': name,
+        'type': 'room',
+        'name': name,
+        'capacity': capacity,
+        'phone': phone,
+        'location': location,
+        'facilities': facilities,
+        'timezone': timezone,
+        'freebusy': []
+    };
+
+    mydb.insert(room).then(function(newdoc) {
+        console.log('room created: ' + JSON.stringify(newdoc));
+        response.status(200).send(room);
+    }).catch(function(err) {
+        console.log('failed to create room: ');
+        response.status(err.statusCode).send(err);
+    });
+});
+
+function errObject(error, reason, statusCode) {
+    return {
+        'error': error,
+        'reason': reason,
+        'statusCode': statusCode
+    }
+}
 
 http.createServer(app).listen(app.get('port'), '0.0.0.0', function() {
     console.log('Express server listening on port ' + app.get('port'));
