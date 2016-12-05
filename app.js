@@ -148,7 +148,7 @@ app.get('/', routes.index);
 /**
  * Get all meeting rooms
  */
-app.get('/api/smr/rooms', function(request, response) {
+app.get('/api/smr/v1/rooms', function(request, response) {
     var mydb = cloudant.db.use(dbCredentials.dbName);
     mydb.view('resouces', 'rooms', function(err, body) {
         if (!err) {
@@ -178,7 +178,7 @@ app.get('/api/smr/rooms', function(request, response) {
 /**
  * Get free-busy data for rooms
  */
-app.get('/api/smr/freebusy', function(request, response) {
+app.get('/api/smr/v1/freebusy', function(request, response) {
 
     // Test room : 12M01/Monitor/6/3IFC
     //console.log('room: '+request.query.room);
@@ -268,7 +268,7 @@ app.get('/api/smr/freebusy', function(request, response) {
     }
  }
  */
-app.post('/api/smr/book', function(request, response) {
+app.post('/api/smr/v1/book', function(request, response) {
     var slotsize = 10; // in minutes
     var minslot = slotsize*10000; // in millsec
 
@@ -341,7 +341,7 @@ app.post('/api/smr/book', function(request, response) {
  * Delete the booked event on the room
  * Content-Type should be 'application/json'
  */
-app.delete('/api/smr/book', function(request, response) {
+app.delete('/api/smr/v1/book', function(request, response) {
 
     response.setHeader('Content-Type', 'application/json');
 
@@ -442,14 +442,14 @@ app.delete('/api/smr/book', function(request, response) {
 
 
 /**
- * Create Site
+ * Create a site
  * Content-Type should be 'application/json'
  {
     'name': name,
     'location': location
  }
  */
-app.post('/api/smr/site', function(request, response) {
+app.post('/api/smr/v1/site', function(request, response) {
 
     response.setHeader('Content-Type', 'application/json');
 
@@ -489,7 +489,7 @@ app.post('/api/smr/site', function(request, response) {
     'timezone': timezone,
  }
  */
-app.post('/api/smr/room', function(request, response) {
+app.post('/api/smr/v1/room', function(request, response) {
 
     response.setHeader('Content-Type', 'application/json');
 
