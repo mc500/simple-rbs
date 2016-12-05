@@ -36,6 +36,17 @@ if ('development' == app.get('env')) {
     app.use(errorHandler());
 }
 
+//app.use(express.static(path.join(__dirname, 'public')));
+var swaggerUi = require('swagger-ui-express');
+//var swaggerDocument = require('./api/swagger.yaml');
+
+var spec = fs.readFileSync('./api/v1/swagger.yaml', 'utf8');
+var swaggerDocument = require('js-yaml').safeLoad(spec);
+//app.use(swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+
+//app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, true));
+app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // hide top bar
+
 function initDBConnection() {
 
     var db;
@@ -179,9 +190,6 @@ app.get('/api/smr/v1/rooms', function(request, response) {
  * Get free-busy data for rooms
  */
 app.get('/api/smr/v1/freebusy', function(request, response) {
-
-    // Test room : 12M01/Monitor/6/3IFC
-    //console.log('room: '+request.query.room);
 
     response.setHeader('Content-Type', 'application/json');
 
@@ -478,7 +486,34 @@ app.post('/api/smr/v1/site', function(request, response) {
         console.log('site created: '+JSON.stringify(newdoc));
         response.sendStatus(200);
     }).catch(function(err) {
-        console.log('failed to create site: ');
+        console.log('failed to create a site');
+        response.status(err.statusCode).send(err);
+    });
+});
+
+
+/**
+ * Get site information
+ */
+app.get('/api/smr/v1/site', function(request, response) {
+
+    var name = request.query.name;
+
+    if (!name) {
+        var err = errObject('failed to get a site', 'name is invalid', 500);
+        console.log(err.error);
+        response.status(err.statusCode).send(err);
+        return;
+    }
+
+    var mydb = cloudant.db.use(dbCredentials.dbName);
+    mydb.get(name).then(function(body) {
+        response.json({
+            'name': body.name,
+            'location': body.location
+        });
+    }).catch(function(err) {
+        console.log('failed to get a site');
         response.status(err.statusCode).send(err);
     });
 });
@@ -542,7 +577,37 @@ app.post('/api/smr/v1/room', function(request, response) {
         console.log('room created: ' + JSON.stringify(newdoc));
         response.sendStatus(200);
     }).catch(function(err) {
-        console.log('failed to create room: ');
+        console.log('failed to create a room');
+        response.status(err.statusCode).send(err);
+    });
+});
+
+/**
+ * Get room information
+ */
+app.get('/api/smr/v1/room', function(request, response) {
+
+    var room = request.query.room;
+
+    if (!room) {
+        var err = errObject('failed to get a room', 'room is invalid', 500);
+        console.log(err.error);
+        response.status(err.statusCode).send(err);
+        return;
+    }
+
+    var mydb = cloudant.db.use(dbCredentials.dbName);
+    mydb.get(room).then(function(body) {
+        response.json({
+            'name': body.name,
+            'capacity': body.capacity,
+            'phone': body.phone,
+            'location': body.location,
+            'facilities': body.facilities,
+            'timezone': body.timezone
+        });
+    }).catch(function(err) {
+        console.log('failed to get a room');
         response.status(err.statusCode).send(err);
     });
 });
@@ -554,6 +619,21 @@ function errObject(error, reason, statusCode) {
         'statusCode': statusCode
     }
 }
+
+
+// API doc
+/*
+var swaggerUi = require('swagger-ui-express');
+//var swaggerDocument = require('./api/swagger.yaml');
+
+var spec = fs.readFileSync('./api/v1/swagger.yaml', 'utf8');
+var swaggerDocument = require('js-yaml').safeLoad(spec);
+//app.use(swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+
+//app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, true));
+//app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // hide top bar
+app.use(swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // hide top bar
+*/
 
 http.createServer(app).listen(app.get('port'), '0.0.0.0', function() {
     console.log('Express server listening on port ' + app.get('port'));

@@ -8,6 +8,7 @@ info:
 host: simple-rbs.mybluemix.net
 # array of all schemes that your API supports
 schemes:
+  - http
   - https
 # will be prefixed to all paths
 basePath: /api/smr/v1
@@ -102,7 +103,37 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
+    get:
+      summary: Get a site information
+      parameters:
+      - name : name
+        in: query
+        type: string
+      responses:
+        200:
+          description: Information of the site
+          schema:
+            $ref: '#/definitions/SiteObject'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
   /room:
+    get:
+      summary: Get a room information
+      parameters:
+      - name : room
+        in: query
+        type: string
+      responses:
+        200:
+          description: Information of the meeting room
+          schema:
+            $ref: '#/definitions/RoomObject'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
     post:
       summary: Book on the room
       parameters:
