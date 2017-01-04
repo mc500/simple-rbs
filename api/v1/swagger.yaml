@@ -14,28 +14,6 @@ basePath: /api/smr/v1
 produces:
   - application/json
 paths:
-  /auth/checklogin:
-    get:
-      summary: checklogin
-      tags: [Auth API]
-      responses:
-        200:
-          description: OK
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
-  /auth/logout:
-    get:
-      summary: logout
-      tags: [Auth API]
-      responses:
-        200:
-          description: OK
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
   /site:
     get:
       summary: Get a site information
@@ -84,8 +62,7 @@ paths:
             $ref: '#/definitions/Error'
     put:
       summary: Update information of a site
-      description: currently N/A
-      tags: [Site API, Admin API]
+      tags: [Site API, Admin API,  N/A]
       parameters:
       - name: body
         in: body
@@ -100,8 +77,8 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     delete:
-      summary: Inactivate a site
-      tags: [Site API, Admin API]
+      summary: Inactivate a site ( inactivate all rooms in this site )
+      tags: [Site API, Admin API,  N/A]
       parameters:
       - name : siteid
         in: query
@@ -236,7 +213,7 @@ paths:
             $ref: '#/definitions/Error'
     put:
       summary: Update information of a room
-      tags: [Room API, Admin API]
+      tags: [Room API, Admin API,  N/A]
       parameters:
       - name: body
         in: body
@@ -251,8 +228,8 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     delete:
-      summary: Inactivate a room (remove reserved event in a room)
-      tags: [Room API, Admin API]
+      summary: Inactivate a room (remove all reserved events in this room)
+      tags: [Room API, Admin API,  N/A]
       parameters:
       - name : roomid
         in: query

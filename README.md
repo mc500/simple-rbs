@@ -1,8 +1,19 @@
-# Node.js Cloudant Starter Overview
+# Simple Meeting Room Booking Overview
 
-The Node.js Cloudant Starter demonstrates how to use the Bluemix Cloudant NoSQL DB service. The app displays persisted files and lets the user upload new files or delete old files.
+이 애플리케이션은 Bluemix Cloudant NoSQL DB service를 이용하여 meeting room에 대한 예약 관리 기능을 REST API로 제공합니다. API Spec은 (swagger-UI)[swagger.io/swagger-ui]를 이용하여 Web Browser로 접근 하여 제공하는 기능을 확인이 가능합니다.
 
-## Decomposition Instructions
+## site
 
-* See app.js for how to obtain and use the Cloudant credentials as well as the file CRUD API
-* See public/scripts/index.js and public/scripts/util.js for how the front-end calls the back-end API
+site는 room을 관리하는 단위를 말하며 사무실의 경우 건물을 나타냅니다
+
+## room
+
+room은 site의 하위 정보로 관리되며 예약을 할 수 있는 대상이 됩니다.
+
+## Notes
+
+Spec에 정의된 모든 API가 다 구현되어 있는 것은 아니므로 미구현 API는 별도 tag로 관리되는 내용을 참고 바랍니다.
+
+## License
+
+  This sample code is licensed under Apache 2.0. Full license text is available in [LICENSE](LICENSE).
