@@ -1,6 +1,6 @@
 # Simple Meeting Room Booking Overview
 
-이 애플리케이션은 Bluemix Cloudant NoSQL DB service를 이용하여 meeting room에 대한 예약 관리 기능을 REST API로 제공합니다. API Spec은 (swagger-UI)[swagger.io/swagger-ui]를 이용하여 Web Browser로 접근 하여 제공하는 기능을 확인이 가능합니다.
+이 애플리케이션은 Bluemix Cloudant NoSQL DB service를 이용하여 meeting room에 대한 예약 관리 기능을 REST API로 제공합니다. API Spec은 [swagger-UI](http://swagger.io/swagger-ui/)를 이용하여 Web Browser로 접근 하여 제공하는 기능을 확인이 가능합니다.
 
 ## site
 
