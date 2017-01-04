@@ -5,11 +5,10 @@ info:
   description: Simple Meeting Room Booking System API
   version: "0.0.2"
 # the domain of the service
-#host: simple-rbs.mybluemix.net
+host: simple-rbs.mybluemix.net
 # array of all schemes that your API supports
 schemes:
   - http
-  - https
 # will be prefixed to all paths
 basePath: /api/smr/v1
 produces:
