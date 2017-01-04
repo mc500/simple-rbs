@@ -3,9 +3,9 @@ swagger: '2.0'
 info:
   title: SMR API
   description: Simple Meeting Room Booking System API
-  version: "0.0.1"
+  version: "0.0.2"
 # the domain of the service
-host: simple-rbs.mybluemix.net
+#host: simple-rbs.mybluemix.net
 # array of all schemes that your API supports
 schemes:
   - http
@@ -15,12 +15,138 @@ basePath: /api/smr/v1
 produces:
   - application/json
 paths:
-  /rooms:
+  /auth/checklogin:
     get:
-      summary: Get all meeting rooms
+      summary: checklogin
+      tags: [Auth API]
       responses:
         200:
-          description: An array of meeting room
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /auth/logout:
+    get:
+      summary: logout
+      tags: [Auth API]
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /site:
+    get:
+      summary: Get a site information
+      tags: [Site API]
+      parameters:
+      - name : siteid
+        in: query
+        type: string
+        required: true
+        description: ex. 3IFC
+      responses:
+        200:
+          description: Information of the site
+          schema:
+            $ref: '#/definitions/SiteObject'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a site
+      tags: [Site API, Admin API]
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/SiteObject'
+      responses:
+        200:
+          description: OK
+        409:
+          description: Conflict
+          schema:
+            $ref: '#/definitions/Error'
+          examples:
+            application/json: |-
+              {
+                "error": "conflict",
+                "reason": "Document update conflict.",
+                "statusCode": 409
+              }
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      summary: Update information of a site
+      description: currently N/A
+      tags: [Site API, Admin API]
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/SiteObject'
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      summary: Inactivate a site
+      tags: [Site API, Admin API]
+      parameters:
+      - name : siteid
+        in: query
+        type: string
+        required: true
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /site/list:
+    get:
+      summary: Get site list for the user id
+      tags: [Site API]
+      parameters:
+      - name : userid
+        in: query
+        type: string
+        description: returns all site list if the userid is empty
+      responses:
+        200:
+          description: list of the site
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/SiteObject'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /site/rooms:
+    get:
+      summary: Get the room list of the given site
+      tags: [Site API]
+      parameters:
+      - name : siteid
+        in: query
+        type: string
+        required: true
+      responses:
+        200:
+          description: List of rooms
           schema:
             type: array
             items:
@@ -29,29 +155,176 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
-  /freebusy:
+  /site/rooms/byfloor:
     get:
-      summary: Get free-busy data for rooms or selected single room
+      summary: Get the room list on given floor
+      tags: [Site API]
       parameters:
-      - name : room
+      - name : siteid
         in: query
         type: string
-      - name : begin
+        required: true
+      - name : floor
+        in: query
+        type: number
+        required: true
+      responses:
+        200:
+          description: List of rooms
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/RoomObject'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /room:
+    get:
+      summary: Get the room information
+      tags: [Room API]
+      parameters:
+      - name : roomid
+        in: query
+        type: string
+        required: true
+      responses:
+        200:
+          description: Information of the meeting room
+          schema:
+            $ref: '#/definitions/RoomObject'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create the room
+      tags: [Room API, Admin API]
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/RoomObject'
+      responses:
+        200:
+          description: OK
+        404:
+          description: Conflict
+          schema:
+            $ref: '#/definitions/Error'
+          examples:
+            application/json: |-
+              {
+                "error": "failed to create a room",
+                "reason": "The site is not exist.",
+                "statusCode": 404
+              }
+        409:
+          description: Conflict
+          schema:
+            $ref: '#/definitions/Error'
+          examples:
+            application/json: |-
+              {
+                "error": "conflict",
+                "reason": "Document update conflict.",
+                "statusCode": 409
+              }
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      summary: Update information of a room
+      tags: [Room API, Admin API]
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/RoomObject'
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      summary: Inactivate a room (remove reserved event in a room)
+      tags: [Room API, Admin API]
+      parameters:
+      - name : roomid
+        in: query
+        type: string
+        required: true
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /freebusy/available:
+    get:
+      summary: Get available rooms with given capacity and duration
+      tags: [Freebusy API]
+      parameters:
+      - name : siteid
+        in: query
+        type: string
+        required: true
+      - name : capacity
+        in: query
+        type: integer
+        format: int32
+        required: true
+      - name : start
         in: query
         type: integer
         format: int64
+        required: true
       - name : end
         in: query
         type: integer
         format: int64
-        
+        required: true
       responses:
         200:
-          description: An freebusy array of the meeting rooms
+          description: An array of available rooms
           schema:
             type: array
             items:
-              $ref: '#/definitions/FreeBusyStatus'
+              $ref: '#/definitions/RoomObject'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /freebusy/room:
+    get:
+      summary: Get free-busy data for the selected single room
+      tags: [Freebusy API]
+      parameters:
+      - name : roomid
+        in: query
+        type: string
+        required: true
+      - name : start
+        in: query
+        type: integer
+        format: int64
+        required: true
+      - name : end
+        in: query
+        type: integer
+        format: int64
+        required: true
+      responses:
+        200:
+          description: freebusy status
+          schema:
+            $ref: '#/definitions/FreeBusyStatus'
         default:
           description: Unexpected error
           schema:
@@ -59,6 +332,7 @@ paths:
   /book:
     post:
       summary: Book on the room
+      tags: [Reservation API]
       parameters:
       - name: body
         in: body
@@ -71,79 +345,146 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
-    delete:
-      summary: Delete the booked event on the room
+    get:
+      summary: Get the booked event
+      tags: [Reservation API]
       parameters:
-      - name: room
+      - name: eventid
         in: query
         type: string
+        required: true
+      - name: roomid
+        in: query
+        type: string
+        required: true
+      responses:
+        200:
+          description: event
+          schema:
+            $ref: '#/definitions/EventObject'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      summary: Delete the booked event on the room
+      tags: [Reservation API]
+      parameters:
+      - name: eventid
+        in: query
+        type: string
+        required: true
+      - name: roomid
+        in: query
+        type: string
+        required: true
+      - name: userid
+        in: query
+        type: string
+        required: true
+      responses:
+        200:
+          description: OK
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /book/search/bysite:
+    get:
+      summary: Get reservations for a site
+      tags: [Reservation API]
+      parameters:
+      - name: siteid
+        in: query
+        type: string
+        required: true
       - name: start
+        description: start datetime to query
         in: query
         type: integer
         format: int64
+        required: true
+      - name: end
+        in: query
+        description: end datetime to query
+        type: integer
+        format: int64
+        required: true
       responses:
         200:
-          description: OK
+          description: Reserved event list
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/EventObject'
         default:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
-  /site:
-    post:
-      summary: Create a site
-      parameters:
-      - name: body
-        in: body
-        schema:
-          $ref: '#/definitions/SiteObject'
-      responses:
-        200:
-          description: OK
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
+  /book/search/byuser:
     get:
-      summary: Get a site information
+      summary: Get reservations for a site and user(subscriber)
+      tags: [Reservation API]
       parameters:
-      - name : name
+      - name: siteid
         in: query
         type: string
-      responses:
-        200:
-          description: Information of the site
-          schema:
-            $ref: '#/definitions/SiteObject'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
-  /room:
-    get:
-      summary: Get a room information
-      parameters:
-      - name : room
+        required: true
+      - name: userid
         in: query
         type: string
+        required: true
+      - name: start
+        description: start datetime to query
+        in: query
+        type: integer
+        format: int64
+        required: true
+      - name: end
+        in: query
+        description: end datetime to query
+        type: integer
+        format: int64
+        required: true
       responses:
         200:
-          description: Information of the meeting room
+          description: Reserved event list
           schema:
-            $ref: '#/definitions/RoomObject'
+            type: array
+            items:
+              $ref: '#/definitions/EventObject'
         default:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
-    post:
-      summary: Book on the room
+  /book/search/byroom:
+    get:
+      summary: Get reservation of the room
+      tags: [Reservation API]
       parameters:
-      - name: body
-        in: body
-        schema:
-          $ref: '#/definitions/RoomObject'
+      - name: roomid
+        in: query
+        type: string
+        required: true
+      - name: start
+        description: start datetime to query
+        in: query
+        type: integer
+        format: int64
+        required: true
+      - name: end
+        description: end datetime to query
+        in: query
+        type: integer
+        format: int64
+        required: true
       responses:
         200:
-          description: OK
+          description: Reserved event list
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/EventObject'
         default:
           description: Unexpected error
           schema:
@@ -151,9 +492,9 @@ paths:
 definitions:
   SiteObject:
     type: object
-    required: ['name']
+    required: ['siteid']
     properties:
-      name:
+      siteid:
         type: string
         example: 3IFC
       location:
@@ -161,11 +502,14 @@ definitions:
         example: Seoul/Korea
   RoomObject:
     type: object
-    required: ['name', 'capacity']
+    required: ['roomid', 'siteid', 'capacity']
     properties:
-      name:
+      roomid:
         type: string
         example: 12M12/Monitor/10/3IFC
+      siteid:
+        type: string
+        example: 3IFC
       capacity:
         type: integer
         format: int32
@@ -173,9 +517,9 @@ definitions:
       phone:
         type: string
         example: '+82-02-1234-0000'
-      location:
+      floor:
         type: string
-        example: 12F
+        example: 12
       facilities:
         type: string
         example: Monitor
@@ -184,9 +528,9 @@ definitions:
         example: Asia/Seoul
   BookingObject:
     type: object
-    required: ['room', 'start', 'end', 'subscriber']
+    required: ['roomid', 'start', 'end', 'purpose', 'user']
     properties:
-      room:
+      roomid:
         type: string
         example: 12M12/Monitor/10/3IFC
       start:
@@ -197,26 +541,59 @@ definitions:
         type: integer
         format: int64
         example: 1480521600000
-      subscriber:
-        $ref: '#/definitions/Subscriber'
-  Subscriber:
+      purpose:
+        type: string
+        example: quick review
+      attendees:
+        type: integer
+        format: int32
+        example: 5
+      user:
+        $ref: '#/definitions/User'
+  EventObject:
     type: object
-    required: ['name']
+    required: ['eventid', 'roomid', 'start', 'end', 'purpose', 'user']
     properties:
+      eventid:
+        type: string
+        example: 1234
+      roomid:
+        type: string
+        example: 12M12/Monitor/10/3IFC
+      start:
+        type: integer
+        format: int64
+        example: 1480518000000
+      end:
+        type: integer
+        format: int64
+        example: 1480521600000
+      purpose:
+        type: string
+        example: quick review
+      user:
+        $ref: '#/definitions/User'
+  User:
+    type: object
+    required: ['userid', 'name', 'email']
+    properties:
+      userid:
+        type: string
+        example: john.doe@acme.ibm.com
       name:
         type: string
         example: John Doe/ACME
       email:
         type: string
-        example: johne.doe@ACME
+        example: john.doe@acme.ibm.com
       phone:
         type: string
         example: +82-01-1234-0000
   FreeBusyStatus:
     type: object
-    required: ['room', 'freebusy']
+    required: ['roomid', 'freebusy']
     properties:
-      room:
+      roomid:
         type: string
         example: 12M12/Monitor/10/3IFC
       freebusy:
@@ -225,16 +602,20 @@ definitions:
           $ref: '#/definitions/FreeBusy'
   FreeBusy:
     type: object
-    required: ['start', 'duration']
+    required: ['start', 'end', 'duration']
     properties:
       start:
         type: integer
         format: int64
         example: 1480518000000
-      duration:
+      end:
         type: integer
         format: int64
         example: 1480521600000
+      duration:
+        type: integer
+        format: int64
+        example: 3600000
   Error:
     type: object
     properties:
