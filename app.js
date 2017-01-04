@@ -43,10 +43,16 @@ var swaggerUi = require('swagger-ui-express');
 
 var spec = fs.readFileSync('./api/v1/swagger.yaml', 'utf8');
 var swaggerDocument = require('js-yaml').safeLoad(spec);
-//app.use(swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+//app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // hide top bar
 
-//app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, true));
-app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // hide top bar
+// Map the express-swagger-ui resources
+app.use('/api/v1/docs', express.static(__dirname + '/node_modules/swagger-ui-express/static'));
+app.get('/api/v1/docs', function(req, res){
+    res.render('swagger-ui-template.html', {
+    	'swaggerDoc': JSON.stringify(swaggerDocument),
+    	'explorerString': ''
+    });
+});
 
 // Page Routing
 routes.initialize(app);
