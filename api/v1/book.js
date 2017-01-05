@@ -215,25 +215,30 @@ function searchBySite(request, response) {
 
     end -= 1000; // end time will be 1 secs earlier
 
-    mydb.view('resouces', 'events_by_site', { startkey: [siteid, start], endkey: [siteid, end]}).then(function(body) {
-        response.setHeader('Content-Type', 'application/json');
-        var len = body.rows.length;
-        console.log('total # of docs -> '+len);
-        if(len == 0) {
-            response.write('[]'); // empty array
-            response.end();
-            return;
-        }
+    mydb.get(siteid).then(function() {
+        mydb.view('resouces', 'events_by_site', { startkey: [siteid, start], endkey: [siteid, end]}).then(function(body) {
+            response.setHeader('Content-Type', 'application/json');
+            var len = body.rows.length;
+            console.log('total # of docs -> '+len);
+            if(len == 0) {
+                response.write('[]'); // empty array
+                response.end();
+                return;
+            }
 
-        var docList = [];
-        body.rows.forEach(function(doc) {
-            console.log(doc.value);
-            docList.push(doc.value);
+            var docList = [];
+            body.rows.forEach(function(doc) {
+                console.log(doc.value);
+                docList.push(doc.value);
+            });
+            response.write(JSON.stringify(docList));
+            response.end();
+        }).catch(function(err){
+            console.log('failed to get document');
+            common.responseError(response, err);
         });
-        response.write(JSON.stringify(docList));
-        response.end();
-    }).catch(function(err){
-        console.log('failed to get document');
+    }).catch(function(err) {
+        console.log('failed to get a site: '+ JSON.stringify(err));
         common.responseError(response, err);
     });
 }
@@ -256,25 +261,30 @@ function searchByUser(request, response) {
 
     end -= 1000; // end time will be 1 secs earlier
 
-    mydb.view('resouces', 'events_by_user', { startkey: [siteid, userid, start], endkey: [siteid, userid, end]}).then(function(body) {
-        response.setHeader('Content-Type', 'application/json');
-        var len = body.rows.length;
-        console.log('total # of docs -> '+len);
-        if(len == 0) {
-            response.write('[]'); // empty array
-            response.end();
-            return;
-        }
+    mydb.get(siteid).then(function() {
+        mydb.view('resouces', 'events_by_user', { startkey: [siteid, userid, start], endkey: [siteid, userid, end]}).then(function(body) {
+            response.setHeader('Content-Type', 'application/json');
+            var len = body.rows.length;
+            console.log('total # of docs -> '+len);
+            if(len == 0) {
+                response.write('[]'); // empty array
+                response.end();
+                return;
+            }
 
-        var docList = [];
-        body.rows.forEach(function(doc) {
-            console.log(doc.value);
-            docList.push(doc.value);
+            var docList = [];
+            body.rows.forEach(function(doc) {
+                console.log(doc.value);
+                docList.push(doc.value);
+            });
+            response.write(JSON.stringify(docList));
+            response.end();
+        }).catch(function(err){
+            console.log('failed to get document');
+            common.responseError(response, err);
         });
-        response.write(JSON.stringify(docList));
-        response.end();
-    }).catch(function(err){
-        console.log('failed to get document');
+    }).catch(function(err) {
+        console.log('failed to get a site: '+ JSON.stringify(err));
         common.responseError(response, err);
     });
 }
