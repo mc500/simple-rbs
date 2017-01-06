@@ -130,7 +130,7 @@ function searchAvailableRooms(request, response) {
 
     if (!common.validateDateRange(start, end, minslot)) {
         //
-        common.responseError(response, 'invalid date time!!!', 401);
+        common.responseError(response, 'invalid date time!!!', 400);
         return;
     }
 

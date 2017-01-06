@@ -45,7 +45,7 @@ function bookOnTheRoom(request, response) {
 
     if (!common.validateDateRange(start, end, minslot)) {
         //
-        common.responseError(response, 'invalid date time!!!', 401);
+        common.responseError(response, 'invalid date time!!!', 400);
         return;
     }
 
@@ -209,7 +209,7 @@ function searchBySite(request, response) {
 
     if (!common.validateDateRange(start, end, minslot)) {
         //
-        common.responseError(response, 'invalid date time!!!', 401);
+        common.responseError(response, 'invalid date time!!!', 400);
         return;
     }
 
@@ -255,7 +255,7 @@ function searchByUser(request, response) {
 
     if (!common.validateDateRange(start, end, minslot)) {
         //
-        common.responseError(response, 'invalid date time!!!', 401);
+        common.responseError(response, 'invalid date time!!!', 400);
         return;
     }
 
@@ -300,7 +300,7 @@ function searchByRoom(request, response) {
 
     if (!common.validateDateRange(start, end, minslot)) {
         //
-        common.responseError(response, 'invalid date time!!!', 401);
+        common.responseError(response, 'invalid date time!!!', 400);
         return;
     }
 
