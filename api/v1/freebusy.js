@@ -59,31 +59,28 @@ function listRooms(request, response) {
     });
 }
 
-function getConflictQuery(siteid, capacity, start, end) {
+function getConflictQuery(siteid, start, end) {
     var obj = {
         "selector": {
             "type": "event",
             "siteid": siteid,
-            "capacity": {
-                "$gt": capacity
-            },
-            "$or": [{
+            "$or": [{ // S <= start < E
                 "start": {
-                    "$lt": start
+                    "$lte": start
                 },
                 "end": {
                     "$gt": start
                 }
-            }, {
+            }, {    // S < end <= E
                 "start": {
                     "$lt": end
                 },
                 "end": {
-                    "$gt": end
+                    "$gte": end
                 }
-            }, {
+            }, {    // start < S & E < end #### S >= start & E < end
                 "start": {
-                    "$gt": start
+                    "$gte": start
                 },
                 "end": {
                     "$lt": end
@@ -135,34 +132,43 @@ function searchAvailableRooms(request, response) {
     }
 
     // List rooms
-    mydb.view('resouces', 'rooms', {key: siteid}).then(function(body) {
+    mydb.view('resouces', 'rooms', {key: siteid}).then(function(rbody) {
 
-        var len = body.rows.length;
-        console.log('total # of docs -> '+len);
+        var len = rbody.rows.length;
+        console.log('total # of rooms -> '+len);
         if(len == 0) {
             response.write('[]'); // empty array
             response.end();
             return;
         }
 
-        // Query conflicting events
-        mydb.find(getConflictQuery(siteid, capacity, start, end)).then(function(qbody){
+        console.log('start:'+start+', startText:'+new Date(start).toISOString()+', query: '+request.query.start);
+        console.log('end:'+end+', endText:'+new Date(end).toISOString()+', query: '+request.query.end);
 
-            //console.log(JSON.stringify(qbody));
+        // Query conflicting events
+        mydb.find(getConflictQuery(siteid, start, end)).then(function(qbody){
+
+            console.log(JSON.stringify(qbody.docs));
             var roomids = qbody.docs.reduce(function(obj, item){
                 if (!obj.hasOwnProperty(item.roomid)) {
                     obj[item.roomid] = true;
+                    if (item.roomid == '12M12/Monitor/10/3IFC') {
+
+                        console.log('start:'+new Date(item.start).toISOString());
+                        console.log('end:'+new Date(item.end).toISOString());
+                    }
                 }
                 return obj;
             }, {});
-            //console.log(JSON.stringify(Object.keys(roomids)));
+            // console.log(JSON.stringify(Object.keys(roomids)));
 
             //
             var docList = [];
-            body.rows.forEach(function(doc) {
-                console.log(doc.value);
-                if (!roomids.hasOwnProperty(doc.value.roomid)) {
-                    docList.push(doc.value);
+            rbody.rows.forEach(function(doc) {
+                var room = doc.value;
+                console.log(room);
+                if (!roomids.hasOwnProperty(room.roomid) && (room.capacity >= capacity)) {
+                    docList.push(room);
                 }
             });
             response.write(JSON.stringify(docList));
@@ -205,6 +211,8 @@ function getAvailableTime(request, response) {
                 return false;
             }
             //console.log('show: '+filter.start+', '+slot.start);
+            slot.startText = new Date(slot.start).toISOString();
+            slot.endText = new Date(slot.end).toISOString();
             return true;
         });
 
@@ -220,71 +228,7 @@ function getAvailableTime(request, response) {
     });
 }
 
-function getAvailableTime2(request, response) {
-    console.log('getAvailableTime2');
-
-    response.setHeader('Content-Type', 'application/json');
-
-    var roomid = request.query.roomid;
-    var start = common.convDateInMillisec(request.query.start);
-    var end = common.convDateInMillisec(request.query.end);
-
-    var params = {
-        'key': roomid
-    };
-
-    // filter
-    var filter = {
-        'start': start,
-        'end': end
-    };
-
-    mydb.view('resouces', 'freebusy', params).then(function(body) {
-
-        var len = body.rows.length;
-        console.log('total # of docs -> ' + len);
-        if (len == 0) {
-            response.write('[]'); // empty array
-            response.end();
-            return;
-        }
-
-        var docList = [];
-        body.rows.forEach(function (doc) {
-            //console.log(doc.value);
-
-            // Array
-            var filtered = doc.value.freebusy.filter(function (slot) {
-                if (filter.start && (slot.start < filter.start)) {
-                    //console.log('start filter');
-                    return false;
-                }
-
-                if (filter.end && (slot.start > filter.end)) {
-                    //console.log('end filter');
-                    return false;
-                }
-                //console.log('show: '+filter.start+', '+slot.start);
-                return true;
-            });
-
-            console.log('# of ' + doc.value.roomid + ' freebusy: ' + filtered.length);
-
-            docList.push({
-                'roomid': doc.value.roomid,
-                'freebusy': filtered
-            });
-        });
-        response.write(JSON.stringify(docList));
-        response.end();
-    }).catch(function(err){
-        console.log('failed to get view');
-        common.responseError(response, err);
-    });
-}
-
-
-    module.exports = {
+module.exports = {
     'initialize': function(app, options) {
         app.get('/api/smr/v1/freebusy/available', searchAvailableRooms);
         app.get('/api/smr/v1/freebusy/room', getAvailableTime);

@@ -39,7 +39,7 @@ function convDateInMillisec(datetime) {
 
     try {
         var ndate = Number(datetime);
-        if (ndate === NaN) {
+        if (isNaN(ndate)) {
             return new Date(datetime).getTime();
         }
         return ndate;
