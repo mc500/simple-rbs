@@ -42,6 +42,7 @@ function bookOnTheRoom(request, response) {
     var start = common.convDateInMillisec(body.start);
     var end = common.convDateInMillisec(body.end);
     var user = body.user || {'name': 'In USE'};
+    var purpose = body.purpose;
 
     if (!common.validateDateRange(start, end, minslot)) {
         //
@@ -58,6 +59,7 @@ function bookOnTheRoom(request, response) {
         'end': end,
         'roomid': roomid,
         'siteid': undefined, // siteid will be overridded from room information
+        'purpose': purpose,
         'user': user
     };
 
