@@ -142,9 +142,6 @@ function searchAvailableRooms(request, response) {
             return;
         }
 
-        console.log('start:'+start+', startText:'+new Date(start).toISOString()+', query: '+request.query.start);
-        console.log('end:'+end+', endText:'+new Date(end).toISOString()+', query: '+request.query.end);
-
         // Query conflicting events
         mydb.find(getConflictQuery(siteid, start, end)).then(function(qbody){
 
@@ -152,11 +149,6 @@ function searchAvailableRooms(request, response) {
             var roomids = qbody.docs.reduce(function(obj, item){
                 if (!obj.hasOwnProperty(item.roomid)) {
                     obj[item.roomid] = true;
-                    if (item.roomid == '12M12/Monitor/10/3IFC') {
-
-                        console.log('start:'+new Date(item.start).toISOString());
-                        console.log('end:'+new Date(item.end).toISOString());
-                    }
                 }
                 return obj;
             }, {});
