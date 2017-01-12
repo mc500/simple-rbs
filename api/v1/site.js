@@ -38,7 +38,7 @@ function createNewSite(request, response) {
     var location = body.location;
 
     if (!siteid) {
-        common.responseError(response, 'failed to create a site', 'siteid is required', 404);
+        common.responseError(response, 'siteid is undefined', 400);
         return;
     }
 
@@ -66,7 +66,7 @@ function getSiteInfo(request, response) {
     var siteid = request.query.siteid;
 
     if (!siteid) {
-        common.responseError(response, 'failed to get a site', 'siteid is required', 404);
+        common.responseError(response, 'siteid is undefined', 400);
         return;
     }
 
@@ -89,7 +89,7 @@ function updateSiteInfo(request, response) {
 
     var siteid = body.siteid;
     if (!siteid) {
-        common.responseError(response, 'failed to update a site', 'siteid is required', 404);
+        common.responseError(response, 'siteid is undefined', 400);
         return;
     }
 
@@ -118,7 +118,7 @@ function inactiveSite(request, response) {
 
     var siteid = body.siteid;
     if (!siteid) {
-        common.responseError(response, 'failed to inactive a site', 'siteid is required', 404);
+        common.responseError(response, 'siteid is undefined', 400);
         return;
     }
 
@@ -145,6 +145,11 @@ function listSites(request, response) {
     response.setHeader('Content-Type', 'application/json');
 
     var userid = request.query.userid;
+
+    if (!userid) {
+        common.responseError(response, 'userid is undefined', 400);
+        return;
+    }
 
     mydb.view('resouces', 'sites', {}).then(function(body) {
 
@@ -177,6 +182,11 @@ function listRooms(request, response) {
 
     var siteid = request.query.siteid;
 
+    if (!siteid) {
+        common.responseError(response, 'siteid is undefined', 400);
+        return;
+    }
+
     mydb.view('resouces', 'rooms', {key: siteid}).then(function(body) {
 
         var len = body.rows.length;
@@ -206,6 +216,11 @@ function listRoomsByFloor(request, response) {
 
     var siteid = request.query.siteid;
     var floor = request.query.floor;
+
+    if (!siteid) {
+        common.responseError(response, 'siteid is undefined', 400);
+        return;
+    }
 
     mydb.view('resouces', 'rooms_by_floor', {key:[siteid, Number(floor)]}).then(function(body) {
 

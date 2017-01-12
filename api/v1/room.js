@@ -43,17 +43,17 @@ function createNewRoom(request, response) {
     var timezone = body.timezone;
 
     if (!siteid) {
-        common.responseError(response, 'failed to create a room', 'siteid is required', 404);
+        common.responseError(response, 'siteid is undefined', 400);
         return;
     }
 
     if (!roomid) {
-        common.responseError(response, 'failed to create a room', 'roomid is required', 404);
+        common.responseError(response, 'roomid is undefined', 404);
         return;
     }
 
     if (!capacity) {
-        common.responseError(response, 'failed to create a room', 'capacity is required', 404);
+        common.responseError(response, 'capacity is undefined', 400);
         return;
     }
 
@@ -93,7 +93,7 @@ function getRoomInfo(request, response) {
     var roomid = request.query.roomid;
 
     if (!roomid) {
-        common.responseError(response, 'failed to get a room', 'roomid is invalid');
+        common.responseError(response, 'roomid is undefined', 400);
         return;
     }
 

@@ -46,7 +46,13 @@ if(process.env.VCAP_SERVICES) {
 
             // check if DB exists if not create
             cloudant.db.create(dbCredentials.dbName, function (err, res) {
-                if (err) { console.log('could not create db ', err); }
+                if (err) { 
+                    if (err.error == 'file_exists') {
+                        console.log('already exists');
+                    } else {
+                        console.log('could not create db ', err);    
+                    }
+                }
                 else {
                     // Create Design
 

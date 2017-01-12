@@ -36,6 +36,11 @@ function listRooms(request, response) {
 
     var siteid = request.query.siteid;
 
+    if (!siteid) {
+        common.responseError(response, 'siteid is undefined', 400);
+        return;
+    }
+
     mydb.view('resouces', 'rooms', {key: siteid}).then(function(body) {
 
         var len = body.rows.length;

@@ -50,6 +50,11 @@ function bookOnTheRoom(request, response) {
         return;
     }
 
+    if (!roomid) {
+        common.responseError(response, 'roomid is undefined', 400);
+        return;
+    }
+
     var duration = end - start;
     var event = {
         'type': 'event',
@@ -74,7 +79,7 @@ function bookOnTheRoom(request, response) {
             "end": end,
             "duration": duration
         });
-
+        
         // step3. update freebusy to server
         mydb.insert(roomdoc).then(function() {
             console.log('freebusy updated');
@@ -117,6 +122,11 @@ function getBookedEvent(request, response) {
 
     var eventid = request.query.eventid;
 
+    if (!eventid) {
+        common.responseError(response, 'eventid is undefined', 400);
+        return;
+    }
+
     // get data for the event
     mydb.get(eventid).then(function(doc) {
         //var ret = Object.assign({}, doc);
@@ -144,8 +154,13 @@ function deleteBookedEvent(request, response) {
     var roomid = request.query.roomid;
     var eventid = request.query.eventid;
 
-    if (!(roomid && eventid)) {
-        common.responseError(response, 'failed to get document', 'insufficient parameter', 404);
+    if (!roomid) {
+        common.responseError(response, 'roomid is undefined', 400);
+        return;
+    }
+
+    if (!eventid) {
+        common.responseError(response, 'eventid is undefined', 400);
         return;
     }
 
@@ -164,7 +179,7 @@ function deleteBookedEvent(request, response) {
                         return true;
                     }
                 })) {
-                common.responseError(response, 'failed to get freebusy', 'start key is not in freebusy', 401);
+                common.responseError(response, 'failed to get freebusy', 'start key is not in freebusy', 404);
                 return;
             }
 
@@ -215,6 +230,11 @@ function searchBySite(request, response) {
         return;
     }
 
+    if (!siteid) {
+        common.responseError(response, 'siteid is undefined', 400);
+        return;
+    }
+
     end -= 1000; // end time will be 1 secs earlier
 
     mydb.get(siteid).then(function() {
@@ -261,6 +281,16 @@ function searchByUser(request, response) {
         return;
     }
 
+    if (!siteid) {
+        common.responseError(response, 'siteid is undefined', 400);
+        return;
+    }
+
+    if (!userid) {
+        common.responseError(response, 'userid is undefined', 400);
+        return;
+    }
+
     end -= 1000; // end time will be 1 secs earlier
 
     mydb.get(siteid).then(function() {
@@ -303,6 +333,11 @@ function searchByRoom(request, response) {
     if (!common.validateDateRange(start, end, minslot)) {
         //
         common.responseError(response, 'invalid date time!!!', 400);
+        return;
+    }
+
+    if (!roomid) {
+        common.responseError(response, 'roomid is undefined', 400);
         return;
     }
 

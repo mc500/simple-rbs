@@ -5,7 +5,7 @@ info:
   description: Simple Meeting Room Booking System API
   version: "0.0.2"
 # the domain of the service
-host: simple-rbs.mybluemix.net
+#host: simple-rbs.mybluemix.net
 # array of all schemes that your API supports
 schemes:
   - http
@@ -62,6 +62,7 @@ paths:
             $ref: '#/definitions/Error'
     put:
       summary: Update information of a site
+      description: currently N/A
       tags: [Site API, Admin API,  N/A]
       parameters:
       - name: body
@@ -78,6 +79,7 @@ paths:
             $ref: '#/definitions/Error'
     delete:
       summary: Inactivate a site ( inactivate all rooms in this site )
+      description: currently N/A
       tags: [Site API, Admin API,  N/A]
       parameters:
       - name : siteid
@@ -213,7 +215,8 @@ paths:
             $ref: '#/definitions/Error'
     put:
       summary: Update information of a room
-      tags: [Room API, Admin API,  N/A]
+      description: currently N/A
+      tags: [Room API, Admin API, N/A]
       parameters:
       - name: body
         in: body
@@ -229,6 +232,7 @@ paths:
             $ref: '#/definitions/Error'
     delete:
       summary: Inactivate a room (remove all reserved events in this room)
+      description: currently N/A
       tags: [Room API, Admin API,  N/A]
       parameters:
       - name : roomid
