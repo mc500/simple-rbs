@@ -16,19 +16,31 @@
 
 'use strict';
 
+//
+var defaultDateRange = {
+    'minimum' : 10*60*1000, // 10 minutes
+    'maximum' : 208*24*60*60*1000 // 208 days
+};
+
 /*
  * Common Handling Module
  */
-function validateDateRange(start, end, minimum) {
+function validateDateRange(start, end, minimum, maximum) {
 
     // empty, null, 0, undefined are not used as date time value
     if (!(start && end)) {
         return false;
     }
 
-    minimum = minimum || 0;
+    minimum = minimum || defaultDateRange.minimum;
 
     if ((end - start) <  minimum ) {
+        return false; // invalid
+    }
+
+    maximum = maximum || defaultDateRange.maximum;
+
+    if ((end - start) >  maximum ) {
         return false; // invalid
     }
 
@@ -50,7 +62,7 @@ function convDateInMillisec(datetime) {
 
 function responseOK(response, obj) {
     if (obj) {
-        console.log(JSON.stringify(obj));
+//        console.log(JSON.stringify(obj));
         response.json(obj);
     } else {
         response.sendStatus(200);

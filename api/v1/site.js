@@ -163,7 +163,7 @@ function listSites(request, response) {
 
         var docList = [];
         body.rows.forEach(function (doc) {
-            console.log(doc.value);
+//            console.log(doc.value);
 
             // TODO: Filter sites for the user
             docList.push(doc.value);
@@ -199,7 +199,7 @@ function listRooms(request, response) {
 
         var docList = [];
         body.rows.forEach(function(doc) {
-            console.log(doc.value);
+//            console.log(doc.value);
             docList.push(doc.value);
         });
         response.write(JSON.stringify(docList));
@@ -234,7 +234,7 @@ function listRoomsByFloor(request, response) {
 
         var docList = [];
         body.rows.forEach(function(doc) {
-            console.log(doc.value);
+//            console.log(doc.value);
             docList.push(doc.value);
         });
         response.write(JSON.stringify(docList));

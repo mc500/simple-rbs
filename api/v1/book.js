@@ -250,7 +250,7 @@ function searchBySite(request, response) {
 
             var docList = [];
             body.rows.forEach(function(doc) {
-                console.log(doc.value);
+//                console.log(doc.value);
                 docList.push(doc.value);
             });
             response.write(JSON.stringify(docList));
@@ -306,7 +306,7 @@ function searchByUser(request, response) {
 
             var docList = [];
             body.rows.forEach(function(doc) {
-                console.log(doc.value);
+//                console.log(doc.value);
                 docList.push(doc.value);
             });
             response.write(JSON.stringify(docList));
@@ -355,7 +355,7 @@ function searchByRoom(request, response) {
 
         var docList = [];
         body.rows.forEach(function(doc) {
-            console.log(doc.value);
+//            console.log(doc.value);
             docList.push(doc.value);
         });
         response.write(JSON.stringify(docList));

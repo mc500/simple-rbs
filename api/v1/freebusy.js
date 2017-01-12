@@ -53,7 +53,7 @@ function listRooms(request, response) {
 
         var docList = [];
         body.rows.forEach(function(doc) {
-            console.log(doc.value);
+//            console.log(doc.value);
             docList.push(doc.value);
         });
         response.write(JSON.stringify(docList));
@@ -121,12 +121,12 @@ function searchAvailableRooms(request, response) {
     var end = common.convDateInMillisec(request.query.end);
 
     if (!siteid) {
-        common.responseError(response, 'failed to search a room', 'siteid is required', 404);
+        common.responseError(response, 'failed to search a room', 'siteid is required', 400);
         return;
     }
 
     if (!capacity) {
-        common.responseError(response, 'failed to search a room', 'capacity is required', 404);
+        common.responseError(response, 'failed to search a room', 'capacity is required', 400);
         return;
     }
 
@@ -136,46 +136,51 @@ function searchAvailableRooms(request, response) {
         return;
     }
 
-    // List rooms
-    mydb.view('resouces', 'rooms', {key: siteid}).then(function(rbody) {
+    mydb.get(siteid).then(function(body) {
+        // List rooms
+        mydb.view('resouces', 'rooms', {key: siteid}).then(function(rbody) {
 
-        var len = rbody.rows.length;
-        console.log('total # of rooms -> '+len);
-        if(len == 0) {
-            response.write('[]'); // empty array
-            response.end();
-            return;
-        }
+            var len = rbody.rows.length;
+            console.log('total # of rooms -> '+len);
+            if(len == 0) {
+                response.write('[]'); // empty array
+                response.end();
+                return;
+            }
 
-        // Query conflicting events
-        mydb.find(getConflictQuery(siteid, start, end)).then(function(qbody){
+            // Query conflicting events
+            mydb.find(getConflictQuery(siteid, start, end)).then(function(qbody){
 
-            console.log(JSON.stringify(qbody.docs));
-            var roomids = qbody.docs.reduce(function(obj, item){
-                if (!obj.hasOwnProperty(item.roomid)) {
-                    obj[item.roomid] = true;
-                }
-                return obj;
-            }, {});
-            // console.log(JSON.stringify(Object.keys(roomids)));
+                //console.log(JSON.stringify(qbody.docs));
+                var roomids = qbody.docs.reduce(function(obj, item){
+                    if (!obj.hasOwnProperty(item.roomid)) {
+                        obj[item.roomid] = true;
+                    }
+                    return obj;
+                }, {});
+                // console.log(JSON.stringify(Object.keys(roomids)));
 
-            //
-            var docList = [];
-            rbody.rows.forEach(function(doc) {
-                var room = doc.value;
-                console.log(room);
-                if (!roomids.hasOwnProperty(room.roomid) && (room.capacity >= capacity)) {
-                    docList.push(room);
-                }
+                //
+                var docList = [];
+                rbody.rows.forEach(function(doc) {
+                    var room = doc.value;
+    //                console.log(room);
+                    if (!roomids.hasOwnProperty(room.roomid) && (room.capacity >= capacity)) {
+                        docList.push(room);
+                    }
+                });
+                response.write(JSON.stringify(docList));
+                response.end();
+            }).catch(function(err) {
+                console.log('failed to get rooms');
+                common.responseError(response, err);
             });
-            response.write(JSON.stringify(docList));
-            response.end();
         }).catch(function(err) {
             console.log('failed to get rooms');
             common.responseError(response, err);
         });
     }).catch(function(err) {
-        console.log('failed to get rooms');
+        console.log('failed to get a site: '+ JSON.stringify(err));
         common.responseError(response, err);
     });
 }
@@ -194,6 +199,17 @@ function getAvailableTime(request, response) {
         'start': start,
         'end': end
     };
+
+    if (!roomid) {
+        common.responseError(response, 'roomid is undefined', 400);
+        return;
+    }
+
+    if (!common.validateDateRange(start, end, minslot)) {
+        //
+        common.responseError(response, 'invalid date time!!!', 400);
+        return;
+    }
 
     mydb.get(roomid).then(function(doc) {
 
