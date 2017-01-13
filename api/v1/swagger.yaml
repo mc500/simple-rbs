@@ -35,7 +35,7 @@ paths:
             $ref: '#/definitions/Error'
     post:
       summary: Create a site
-      tags: [Site API, Admin API]
+      tags: [Site API, Management API]
       parameters:
       - name: body
         in: body
@@ -63,7 +63,7 @@ paths:
     put:
       summary: Update information of a site
       description: currently N/A
-      tags: [Site API, Admin API,  N/A]
+      tags: [Site API, Management API,  N/A]
       parameters:
       - name: body
         in: body
@@ -80,7 +80,7 @@ paths:
     delete:
       summary: Inactivate a site ( inactivate all rooms in this site )
       description: currently N/A
-      tags: [Site API, Admin API,  N/A]
+      tags: [Site API, Management API,  N/A]
       parameters:
       - name : siteid
         in: query
@@ -172,7 +172,7 @@ paths:
             $ref: '#/definitions/Error'
     post:
       summary: Create the room
-      tags: [Room API, Admin API]
+      tags: [Room API, Management API]
       parameters:
       - name: body
         in: body
@@ -211,7 +211,7 @@ paths:
     put:
       summary: Update information of a room
       description: currently N/A
-      tags: [Room API, Admin API, N/A]
+      tags: [Room API, Management API, N/A]
       parameters:
       - name: body
         in: body
@@ -228,7 +228,7 @@ paths:
     delete:
       summary: Inactivate a room (remove all reserved events in this room)
       description: currently N/A
-      tags: [Room API, Admin API,  N/A]
+      tags: [Room API, Management API,  N/A]
       parameters:
       - name : roomid
         in: query
@@ -524,7 +524,7 @@ definitions:
         format: int32
         example: 5
       user:
-        $ref: '#/definitions/User'
+        $ref: '#/definitions/UserInfo'
   EventObject:
     type: object
     required: ['eventid', 'roomid', 'start', 'end', 'purpose', 'user']
@@ -547,7 +547,7 @@ definitions:
         type: string
         example: quick review
       user:
-        $ref: '#/definitions/User'
+        $ref: '#/definitions/UserInfo'
   User:
     type: object
     required: ['userid', 'name', 'email']
@@ -564,6 +564,15 @@ definitions:
       phone:
         type: string
         example: +82-01-1234-0000
+  UserPreference:
+    type: object
+    properties:
+      siteid:
+        type: siteid
+        example: 3IFC
+      roomid:
+        type: string
+        example: 12M12/Monitor/10/3IFC
   FreeBusyStatus:
     type: object
     required: ['roomid', 'freebusy']
