@@ -130,6 +130,11 @@ function searchAvailableRooms(request, response) {
         return;
     }
 
+    if (capacity < 0) {
+        common.responseError(response, 'failed to search a room', 'capacity is invalid', 400);
+        return;   
+    }
+
     if (!common.validateDateRange(start, end, minslot)) {
         //
         common.responseError(response, 'invalid date time!!!', 400);

@@ -144,13 +144,6 @@ function listSites(request, response) {
     console.log('listSites');
     response.setHeader('Content-Type', 'application/json');
 
-    var userid = request.query.userid;
-
-    if (!userid) {
-        common.responseError(response, 'userid is undefined', 400);
-        return;
-    }
-
     mydb.view('resouces', 'sites', {}).then(function(body) {
 
         var len = body.rows.length;
@@ -187,27 +180,33 @@ function listRooms(request, response) {
         return;
     }
 
-    mydb.view('resouces', 'rooms', {key: siteid}).then(function(body) {
+    mydb.get(siteid).then(function(body) {
+        mydb.view('resouces', 'rooms', {key: siteid}).then(function(body) {
 
-        var len = body.rows.length;
-        console.log('total # of docs -> '+len);
-        if(len == 0) {
-            response.write('[]'); // empty array
+            var len = body.rows.length;
+            console.log('total # of docs -> '+len);
+            if(len == 0) {
+                response.write('[]'); // empty array
+                response.end();
+                return;
+            }
+
+            var docList = [];
+            body.rows.forEach(function(doc) {
+    //            console.log(doc.value);
+                docList.push(doc.value);
+            });
+            response.write(JSON.stringify(docList));
             response.end();
-            return;
-        }
-
-        var docList = [];
-        body.rows.forEach(function(doc) {
-//            console.log(doc.value);
-            docList.push(doc.value);
+        }).catch(function(err) {
+            console.log('failed to get rooms');
+            common.responseError(response, err);
         });
-        response.write(JSON.stringify(docList));
-        response.end();
     }).catch(function(err) {
-        console.log('failed to get rooms');
+        console.log('failed to get a site: '+ JSON.stringify(err));
         common.responseError(response, err);
     });
+
 }
 
 function listRoomsByFloor(request, response) {
@@ -222,25 +221,35 @@ function listRoomsByFloor(request, response) {
         return;
     }
 
-    mydb.view('resouces', 'rooms_by_floor', {key:[siteid, Number(floor)]}).then(function(body) {
+    if (isNaN(floor)) {
+        common.responseError(response, 'floor is not a number', 400);
+        return;
+    }
 
-        var len = body.rows.length;
-        console.log('total # of docs -> '+len);
-        if(len == 0) {
-            response.write('[]'); // empty array
+    mydb.get(siteid).then(function(body) {
+        mydb.view('resouces', 'rooms_by_floor', {key:[siteid, Number(floor)]}).then(function(body) {
+
+            var len = body.rows.length;
+            console.log('total # of docs -> '+len);
+            if(len == 0) {
+                response.write('[]'); // empty array
+                response.end();
+                return;
+            }
+
+            var docList = [];
+            body.rows.forEach(function(doc) {
+    //            console.log(doc.value);
+                docList.push(doc.value);
+            });
+            response.write(JSON.stringify(docList));
             response.end();
-            return;
-        }
-
-        var docList = [];
-        body.rows.forEach(function(doc) {
-//            console.log(doc.value);
-            docList.push(doc.value);
+        }).catch(function(err) {
+            console.log('failed to get rooms');
+            common.responseError(response, err);
         });
-        response.write(JSON.stringify(docList));
-        response.end();
     }).catch(function(err) {
-        console.log('failed to get rooms');
+        console.log('failed to get a site: '+ JSON.stringify(err));
         common.responseError(response, err);
     });
 }

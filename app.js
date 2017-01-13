@@ -22,8 +22,10 @@ var express = require('express'),
     fs = require('fs');
 
 // Local View
+//var APIBase = './api/v1_domino';
+var APIBase = './api/v1';
 var routes = require('./routes'),
-    APIs = require('./api/v1');
+    APIs = require(APIBase);
 
 var app = express();
 
@@ -55,7 +57,7 @@ if ('development' == app.get('env')) {
 var swaggerUi = require('swagger-ui-express');
 //var swaggerDocument = require('./api/swagger.yaml');
 
-var spec = fs.readFileSync('./api/v1/swagger.yaml', 'utf8');
+var spec = fs.readFileSync(APIBase+'/swagger.yaml', 'utf8');
 var swaggerDocument = require('js-yaml').safeLoad(spec);
 //app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // hide top bar
 
@@ -78,3 +80,6 @@ console.log('API service ready');
 http.createServer(app).listen(app.get('port'), '0.0.0.0', function() {
     console.log('Express server listening on port ' + app.get('port'));
 });
+
+// Expose the app instance as module
+module.exports = app;

@@ -41,7 +41,8 @@ function bookOnTheRoom(request, response) {
     var roomid = body.roomid;
     var start = common.convDateInMillisec(body.start);
     var end = common.convDateInMillisec(body.end);
-    var user = body.user || {'name': 'In USE'};
+    // var user = body.user || {'name': 'In USE'};
+    var user = body.user; //  || {'name': 'In USE'};
     var purpose = body.purpose;
 
     if (!common.validateDateRange(start, end, minslot)) {
@@ -52,6 +53,21 @@ function bookOnTheRoom(request, response) {
 
     if (!roomid) {
         common.responseError(response, 'roomid is undefined', 400);
+        return;
+    }
+
+    if (!user) {
+        common.responseError(response, 'user is undefined', 400);
+        return;
+    }
+
+    if (!user.userid) {
+        common.responseError(response, 'userid is undefined', 400);
+        return;
+    }
+
+    if (!purpose) {
+        common.responseError(response, 'purpose is undefined', 400);
         return;
     }
 
@@ -121,25 +137,38 @@ function getBookedEvent(request, response) {
     response.setHeader('Content-Type', 'application/json');
 
     var eventid = request.query.eventid;
+    var roomid = request.query.roomid;
 
     if (!eventid) {
         common.responseError(response, 'eventid is undefined', 400);
         return;
     }
 
-    // get data for the event
-    mydb.get(eventid).then(function(doc) {
-        //var ret = Object.assign({}, doc);
-        common.responseOK(response, {
-            'eventid': doc._id,
-            'roomid': doc.room,
-            'start': doc.start,
-            'end': doc.end,
-            'startText': doc.startText,
-            'endText': doc.endText,
-            'purpose': doc.purpose,
-            'user': doc.user
+    if (!roomid) {
+        common.responseError(response, 'roomid is undefined', 400);
+        return;
+    }
+
+    mydb.get(roomid).then(function(roomdoc) {
+
+        // get data for the event
+        mydb.get(eventid).then(function(doc) {
+            //var ret = Object.assign({}, doc);
+            common.responseOK(response, {
+                'eventid': doc._id,
+                'roomid': doc.room,
+                'start': doc.start,
+                'end': doc.end,
+                'startText': doc.startText,
+                'endText': doc.endText,
+                'purpose': doc.purpose,
+                'user': doc.user
+            });
+        }).catch(function(err){
+            console.log('failed to get document');
+            common.responseError(response, err);
         });
+
     }).catch(function(err){
         console.log('failed to get document');
         common.responseError(response, err);
@@ -153,6 +182,7 @@ function deleteBookedEvent(request, response) {
 
     var roomid = request.query.roomid;
     var eventid = request.query.eventid;
+    var userid = request.query.userid;
 
     if (!roomid) {
         common.responseError(response, 'roomid is undefined', 400);
@@ -161,6 +191,11 @@ function deleteBookedEvent(request, response) {
 
     if (!eventid) {
         common.responseError(response, 'eventid is undefined', 400);
+        return;
+    }
+    
+    if (!userid) {
+        common.responseError(response, 'userid is undefined', 400);
         return;
     }
 
@@ -343,27 +378,35 @@ function searchByRoom(request, response) {
 
     end -= 1000; // end time will be 1 secs earlier
 
-    mydb.view('resouces', 'events_by_room', { startkey: [roomid, start], endkey: [roomid, end]}).then(function(body) {
-        response.setHeader('Content-Type', 'application/json');
-        var len = body.rows.length;
-        console.log('total # of docs -> '+len);
-        if(len == 0) {
-            response.write('[]'); // empty array
-            response.end();
-            return;
-        }
 
-        var docList = [];
-        body.rows.forEach(function(doc) {
-//            console.log(doc.value);
-            docList.push(doc.value);
+    mydb.get(roomid).then(function(body) {
+
+    mydb.view('resouces', 'events_by_room', { startkey: [roomid, start], endkey: [roomid, end]}).then(function(body) {
+            response.setHeader('Content-Type', 'application/json');
+            var len = body.rows.length;
+            console.log('total # of docs -> '+len);
+            if(len == 0) {
+                response.write('[]'); // empty array
+                response.end();
+                return;
+            }
+
+            var docList = [];
+            body.rows.forEach(function(doc) {
+    //            console.log(doc.value);
+                docList.push(doc.value);
+            });
+            response.write(JSON.stringify(docList));
+            response.end();
+        }).catch(function(err){
+            console.log('failed to get document');
+            common.responseError(response, err);
         });
-        response.write(JSON.stringify(docList));
-        response.end();
-    }).catch(function(err){
-        console.log('failed to get document');
+    }).catch(function(err) {
+        console.log('failed to get a room');
         common.responseError(response, err);
     });
+
 }
 
 

@@ -95,13 +95,8 @@ paths:
             $ref: '#/definitions/Error'
   /site/list:
     get:
-      summary: Get site list for the user id
+      summary: Get all site list
       tags: [Site API]
-      parameters:
-      - name : userid
-        in: query
-        type: string
-        description: returns all site list if the userid is empty
       responses:
         200:
           description: list of the site
