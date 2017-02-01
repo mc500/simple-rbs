@@ -5,7 +5,7 @@
 <br/>
 이 어플리케이션을 블루믹스로 배포합니다.
 <br/>
-<code>&lt;a href="https://bluemix.net/deploy?repository=https://github.com/mc500/simple-rbs" target="_blank"&gt;&lt;img src="http://bluemix.net/deploy/button.png" alt="Deploy to Bluemix" /&gt;&lt;/a&gt;</code>
+<a href="https://bluemix.net/deploy?repository=https://github.com/mc500/simple-rbs" target="_blank"&gt;&lt;img src="http://bluemix.net/deploy/button.png" alt="Deploy to Bluemix" >
 
 ## site
 
