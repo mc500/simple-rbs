@@ -7,9 +7,6 @@
 <br/>
 <a href="https://bluemix.net/deploy?repository=https://github.com/mc500/simple-rbs" target="_blank"><img src="http://bluemix.net/deploy/button.png" alt="Deploy to Bluemix"/><a/>
 
-<a href="https://bluemix.net/deploy?repository=https://github.com/hjjo/simple-rbs" target="_blank"><img src="http://bluemix.net/deploy/button.png" alt="Deploy to Bluemix"/><a/>
-
-
 ## site
 
 site는 room을 관리하는 단위를 말하며 사무실의 경우 건물을 나타냅니다
