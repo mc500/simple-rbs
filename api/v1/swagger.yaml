@@ -546,6 +546,9 @@ definitions:
       purpose:
         type: string
         example: quick review
+      userid:
+        type: string
+        example: john.doe@acme.ibm.com
       user:
         $ref: '#/definitions/UserInfo'
   User:
