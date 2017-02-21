@@ -88,6 +88,7 @@ function bookOnTheRoom(request, response) {
     mydb.get(roomid).then(function(roomdoc) {
 
         event['siteid'] = roomdoc.siteid;
+        event['roomname'] = roomdoc.name; // room name
 
         // step2. freebusy array
         roomdoc.freebusy.push({
@@ -157,6 +158,7 @@ function getBookedEvent(request, response) {
             common.responseOK(response, {
                 'eventid': doc._id,
                 'roomid': doc.room,
+                'roomname': doc.roomname,
                 'start': doc.start,
                 'end': doc.end,
                 'startText': doc.startText,
@@ -259,7 +261,7 @@ function searchBySite(request, response) {
     var start = common.convDateInMillisec(request.query.start);
     var end = common.convDateInMillisec(request.query.end);
 
-    if (!common.validateDateRange(start, end, minslot)) {
+    if (!common.validateDateRange(start, end)) {
         //
         common.responseError(response, 'invalid date time!!!', 400);
         return;
@@ -273,7 +275,38 @@ function searchBySite(request, response) {
     end -= 1000; // end time will be 1 secs earlier
 
     mydb.get(siteid).then(function() {
-        mydb.view('resouces', 'events_by_site', { startkey: [siteid, start], endkey: [siteid, end]}).then(function(body) {
+
+        var p1 = mydb.view('resouces', 'events_by_site',
+                { // for end
+                    startkey: ['END', siteid, start],
+                    endkey: ['END', siteid, end],
+                    limit: 1
+                }),
+            p2 = mydb.view('resouces', 'events_by_site',
+                { // for start
+                    startkey: ['START', siteid, start],
+                    endkey: ['START', siteid, end]
+                });
+
+        Promise.all([p1, p2]).then(function(results) {
+
+            // check if it is duplicated
+            var rows = [];
+            if (results[0].rows.length == 1) {
+                var ee = results[0].rows[0];
+                if (results[1].rows.every(function(item) {
+                        return ee.id !== item.id;
+                    })) {
+                    console.log('push');
+                    rows.push(ee);
+                }
+            }
+
+            // body.rows
+            var body = {
+                rows: rows.concat(results[1].rows)
+            };
+
             response.setHeader('Content-Type', 'application/json');
             var len = body.rows.length;
             console.log('total # of docs -> '+len);
@@ -310,7 +343,7 @@ function searchByUser(request, response) {
     var start = common.convDateInMillisec(request.query.start);
     var end = common.convDateInMillisec(request.query.end);
 
-    if (!common.validateDateRange(start, end, minslot)) {
+    if (!common.validateDateRange(start, end)) {
         //
         common.responseError(response, 'invalid date time!!!', 400);
         return;
@@ -329,7 +362,37 @@ function searchByUser(request, response) {
     end -= 1000; // end time will be 1 secs earlier
 
     mydb.get(siteid).then(function() {
-        mydb.view('resouces', 'events_by_user', { startkey: [siteid, userid, start], endkey: [siteid, userid, end]}).then(function(body) {
+        var p1 = mydb.view('resouces', 'events_by_user',
+                { // for end
+                    startkey: ['END', siteid, userid, start],
+                    endkey: ['END', siteid, userid, end],
+                    limit: 1
+                }),
+            p2 = mydb.view('resouces', 'events_by_user',
+                { // for start
+                    startkey: ['START', siteid, userid, start],
+                    endkey: ['START', siteid, userid, end]
+                });
+
+        Promise.all([p1, p2]).then(function(results) {
+
+            // check if it is duplicated
+            var rows = [];
+            if (results[0].rows.length == 1) {
+                var ee = results[0].rows[0];
+                if (results[1].rows.every(function(item) {
+                        return ee.id !== item.id;
+                    })) {
+                    console.log('push');
+                    rows.push(ee);
+                }
+            }
+
+            // body.rows
+            var body = {
+                rows: rows.concat(results[1].rows)
+            };
+
             response.setHeader('Content-Type', 'application/json');
             var len = body.rows.length;
             console.log('total # of docs -> '+len);
@@ -365,7 +428,7 @@ function searchByRoom(request, response) {
     var start = common.convDateInMillisec(request.query.start);
     var end = common.convDateInMillisec(request.query.end);
 
-    if (!common.validateDateRange(start, end, minslot)) {
+    if (!common.validateDateRange(start, end)) {
         //
         common.responseError(response, 'invalid date time!!!', 400);
         return;
@@ -380,8 +443,37 @@ function searchByRoom(request, response) {
 
 
     mydb.get(roomid).then(function(body) {
+        var p1 = mydb.view('resouces', 'events_by_room',
+                { // for end
+                    startkey: ['END', roomid, start],
+                    endkey: ['END', roomid, end],
+                    limit: 1
+                }),
+            p2 = mydb.view('resouces', 'events_by_room',
+                { // for start
+                    startkey: ['START', roomid, start],
+                    endkey: ['START', roomid, end]
+                });
 
-    mydb.view('resouces', 'events_by_room', { startkey: [roomid, start], endkey: [roomid, end]}).then(function(body) {
+        Promise.all([p1, p2]).then(function(results) {
+
+            // check if it is duplicated
+            var rows = [];
+            if (results[0].rows.length == 1) {
+                var ee = results[0].rows[0];
+                if (results[1].rows.every(function(item) {
+                        return ee.id !== item.id;
+                    })) {
+                    console.log('push');
+                    rows.push(ee);
+                }
+            }
+
+            // body.rows
+            var body = {
+                rows: rows.concat(results[1].rows)
+            };
+
             response.setHeader('Content-Type', 'application/json');
             var len = body.rows.length;
             console.log('total # of docs -> '+len);

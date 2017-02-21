@@ -3,7 +3,7 @@ swagger: '2.0'
 info:
   title: SMR API
   description: Simple Meeting Room Booking System API
-  version: "0.0.2"
+  version: "0.0.3"
 # the domain of the service
 #host: simple-rbs.mybluemix.net
 # array of all schemes that your API supports
@@ -471,6 +471,9 @@ definitions:
     properties:
       siteid:
         type: string
+        example: CAFEBABE000000001
+      name:
+        type: string
         example: 3IFC
       location:
         type: string
@@ -481,10 +484,13 @@ definitions:
     properties:
       roomid:
         type: string
-        example: 12M12/Monitor/10/3IFC
+        example: DEADBABE000000001
+      name:
+        type: string
+        example: 13M09/Monitor/6/3IFC
       siteid:
         type: string
-        example: 3IFC
+        example: CAFEBABE000000001
       capacity:
         type: integer
         format: int32
@@ -507,7 +513,7 @@ definitions:
     properties:
       roomid:
         type: string
-        example: 12M12/Monitor/10/3IFC
+        example: DEADBABE000000001
       start:
         type: integer
         format: int64
@@ -534,6 +540,9 @@ definitions:
         example: 1234
       roomid:
         type: string
+        example: DEADBABE000000001
+      roomname:
+        type: string
         example: 12M12/Monitor/10/3IFC
       start:
         type: integer
@@ -548,25 +557,28 @@ definitions:
         example: quick review
       userid:
         type: string
-        example: john.doe@acme.ibm.com
+        example: CN=John Doe/OU=ACME/O=IBM
       user:
         $ref: '#/definitions/UserInfo'
-  User:
+  UserInfo:
     type: object
     required: ['userid', 'name', 'email']
     properties:
       userid:
         type: string
-        example: john.doe@acme.ibm.com
+        example: CN=John Doe/OU=ACME/O=IBM
       name:
         type: string
-        example: John Doe/ACME
+        example: John Doe
+      phone:
+        type: string
+        example: +82-2-1234-0000
+      mobile:
+        type: string
+        example: +82-10-1234-0000
       email:
         type: string
         example: john.doe@acme.ibm.com
-      phone:
-        type: string
-        example: +82-01-1234-0000
   UserPreference:
     type: object
     properties:

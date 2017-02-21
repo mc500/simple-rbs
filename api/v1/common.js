@@ -91,6 +91,12 @@ function responseError(response, error, reason, statusCode) {
     response.status(err.statusCode).send(err);
 }
 
+function responseNotImplemented(request, response) {
+    // extract API name from request
+    var error = 'API failed';
+    common.responseError(response, error, 'Not implemented yet', 501);
+}
+
 function errObject(error, reason, statusCode) {
     return {
         'error': error,
@@ -104,5 +110,6 @@ module.exports = {
     'convDateInMillisec': convDateInMillisec,
     'responseOK': responseOK,
     'responseError': responseError,
+    'responseNotImplemented': responseNotImplemented,
     'errObject': errObject
 };

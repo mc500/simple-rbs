@@ -115,11 +115,11 @@ function getRoomInfo(request, response) {
 }
 
 function updateRoomInfo(request, response) {
-    common.responseError(response, 'updateRoomInfo failed', 'Not implemented yet', 501);
+    common.responseNotImplemented(request, response);
 }
 
 function inactiveRoom(request, response) {
-    common.responseError(response, 'inactiveRoom failed', 'Not implemented yet', 501);
+    common.responseNotImplemented(request, response);
 }
 
 
