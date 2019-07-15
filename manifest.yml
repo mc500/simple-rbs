@@ -7,7 +7,7 @@ applications:
 - path: .
   memory: 512M
   instances: 1
-  domain: mybluemix.net
+  domain: bluemix.net
   name: simple-rbs
   host: simple-rbs
   disk_quota: 1024M
